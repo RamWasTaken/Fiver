@@ -2,10 +2,12 @@
   "name": "fiverr-clone",
   "version": "1.0.0",
   "scripts": {
-    "build": "if-env TYPE=server && (cd server && npm install) || (cd client && npm install)",
-    "server": "node ./server/index.js",
-    "client": "cd client && npm start"
-  },
+  "build": "cd client && npm install && npm run build",
+  "server": "node ./server/index.js",
+  "client": "cd client && npm start",
+  "start": "cd client && npm run start",
+  "dev": "cd client && npm run dev"
+},
   "dependencies": {
     "if-env": "^1.0.4"
   }
