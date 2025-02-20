@@ -53,13 +53,27 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000; // Default to 3000 if PORT is not set
 
+// 1️⃣ Set up CORS properly
 app.use(
   cors({
-    origin: [process.env.ORIGIN],
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    origin: "https://fiver-frontend.vercel.app", // Hardcoded for testing
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Ensure OPTIONS is included
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
+
+// 2️⃣ Allow preflight requests explicitly
+app.options("*", cors()); // Place this **AFTER** app.use(cors()) but **BEFORE** routes
+
+// 3️⃣ Debugging middleware to log incoming requests
+app.use((req, res, next) => {
+  console.log("CORS Debugging:");
+  console.log("Origin:", req.headers.origin);
+  console.log("Path:", req.path);
+  console.log("Method:", req.method);
+  next();
+});
 
 app.use("/uploads", express.static("uploads"));
 app.use("/uploads/profiles", express.static("uploads/profiles"));
