@@ -16,7 +16,9 @@ const port = process.env.PORT || 3000; // Default to 3000 if PORT is not set
 // ✅ 1️⃣ Ensure allowed origins are set correctly
 const allowedOrigins = process.env.ORIGIN
   ? process.env.ORIGIN.split(",") // Allows multiple origins if provided as a comma-separated string
-  : ["http://localhost:3001", "https://fiver-frontend.vercel.app"]; // Fallback to local and production frontend
+  : ["http://localhost:3001", "https://fiver-frontend.vercel.app","https://fiver-frontend-foxxys-projects.vercel.app",
+  "https://fiver-frontend-ramwastaken-foxxys-projects.vercel.app",
+  "http://localhost:3001"]; // Fallback to local and production frontend
 
 // ✅ 2️⃣ Set up CORS properly
 app.use(
