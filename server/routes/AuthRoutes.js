@@ -24,4 +24,8 @@ authRoutes.post(
   setUserImage
 );
 
+authRoutes.get("/", (req, res) => {
+  res.send("✅ Auth API is working!");
+});
+
 export default authRoutes;

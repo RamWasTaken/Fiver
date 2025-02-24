@@ -35,7 +35,7 @@ function AuthWrapper({ type }) {
         } = await axios.post(
           type === "login" ? LOGIN_ROUTE : SIGNUP_ROUTE,
           { email, password },
-          { withCredentials: true }
+          { withCredentials: true, headers: { "Content-Type": "application/json" } }
         );
         setCookies("jwt", { jwt: jwt });
         dispatch({ type: reducerCases.CLOSE_AUTH_MODAL });
