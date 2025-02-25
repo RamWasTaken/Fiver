@@ -24,25 +24,32 @@ function CreateGigs() {
     price: 0,
     shortDesc: "",
   });
+
+  // Function to remove a feature from the list
   const removeFeature = (index) => {
     const clonedFeatures = [...features];
     clonedFeatures.splice(index, 1);
     setfeatures(clonedFeatures);
   };
 
+  // Handle form input changes
   const handleChange = (e) => {
     setData({ ...data, [e.target.name]: e.target.value });
   };
 
+  // Add a feature to the list
   const addFeature = () => {
     if (data.feature) {
       setfeatures([...features, data.feature]);
       setData({ ...data, feature: "" });
     }
   };
+
+  // Function to add a new gig
   const addGig = async () => {
-    const { category, description, price, revisions, time, title, shortDesc } =
-      data;
+    const { category, description, price, revisions, time, title, shortDesc } = data;
+
+    // Ensure all required fields are filled
     if (
       category &&
       description &&
@@ -66,19 +73,35 @@ function CreateGigs() {
         time,
         shortDesc,
       };
-      const response = await axios.post(ADD_GIG_ROUTE, formData, {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${cookies.jwt}`,
-        },
-        params: gigData,
-      });
-      if (response.status === 201) {
-        router.push("/seller/gigs");
+
+      // ✅ Ensure JWT is a string before using it in headers
+      const token = cookies.jwt;
+      if (!token || typeof token !== "string") {
+        console.error("❌ JWT token is missing or invalid:", token);
+        return; // Stop execution if the token is not valid
+      }
+
+      console.log("✅ Sending request with JWT:", token);
+
+      try {
+        const response = await axios.post(ADD_GIG_ROUTE, formData, {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${String(token)}`, // ✅ Ensure it's a string
+          },
+          params: gigData,
+        });
+
+        if (response.status === 201) {
+          router.push("/seller/gigs");
+        }
+      } catch (error) {
+        console.error("❌ Error creating gig:", error.response?.data || error.message);
       }
     }
   };
+
   return (
     <div className="min-h-[80vh] my-10 mt-0 px-32 ">
       <h1 className="text-6xl text-gray-900 mb-5">Create a new Gig</h1>
@@ -185,24 +208,6 @@ function CreateGigs() {
                 Add
               </button>
             </div>
-            <ul className="flex gap-2 flex-wrap">
-              {features.map((feature, index) => {
-                return (
-                  <li
-                    key={feature + index.toString()}
-                    className="flex gap-2 items-center py-2.5 px-5 mr-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-red-700 cursor-pointer hover:border-red-200"
-                  >
-                    <span>{feature}</span>
-                    <span
-                      className="text-red-700"
-                      onClick={() => removeFeature(index)}
-                    >
-                      X
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
           </div>
           <div>
             <label htmlFor="image" className={labelClassName}>
@@ -245,7 +250,7 @@ function CreateGigs() {
         </div>
         <div>
           <button
-            className="border   text-lg font-semibold px-5 py-3   border-[#1DBF73] bg-[#1DBF73] text-white rounded-md"
+            className="border text-lg font-semibold px-5 py-3 border-[#1DBF73] bg-[#1DBF73] text-white rounded-md"
             type="button"
             onClick={addGig}
           >
