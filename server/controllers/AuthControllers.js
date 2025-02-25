@@ -80,29 +80,38 @@ export const login = async (req, res, next) => {
 
 export const getUserInfo = async (req, res, next) => {
   try {
-    if (req?.userId) {
-      const prisma = new PrismaClient();
-      const user = await prisma.user.findUnique({
-        where: {
-          id: req.userId,
-        },
-      });
-      return res.status(200).json({
-        user: {
-          id: user?.id,
-          email: user?.email,
-          image: user?.profileImage,
-          username: user?.username,
-          fullName: user?.fullName,
-          description: user?.description,
-          isProfileSet: user?.isProfileInfoSet,
-        },
-      });
+    console.log("Fetching user info for userId:", req.userId); // Debugging log
+
+    if (!req.userId) {
+      return res.status(401).json({ error: "Unauthorized - No user ID" });
     }
+
+    const prisma = new PrismaClient();
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.status(200).json({
+      user: {
+        id: user.id,
+        email: user.email,
+        image: user.profileImage,
+        username: user.username,
+        fullName: user.fullName,
+        description: user.description,
+        isProfileSet: user.isProfileInfoSet,
+      },
+    });
   } catch (err) {
-    res.status(500).send("Internal Server Occured");
+    console.error("Error fetching user info:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 export const setUserInfo = async (req, res, next) => {
   try {

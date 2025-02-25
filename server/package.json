@@ -18,9 +18,11 @@
     "ts-node": "^10.9.1"
   },
   "devDependencies": {
+    "eslint": "^9.21.0",
     "nodemon": "^2.0.22"
   },
   "scripts": {
+    "lint": "eslint . --fix",
     "start": "node api/index.js",
     "dev": "nodemon api/index.js",
     "build": "prisma generate"
