@@ -104,7 +104,7 @@ function EditGig() {
           withCredentials: true,
           headers: {
             "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${cookies.jwt}`,
+            Authorization: `Bearer ${String(cookies.jwt)}`,
           },
           params: gigData,
         }
@@ -114,6 +114,8 @@ function EditGig() {
       }
     }
   };
+  console.log("📡 Fetching user info with JWT:", cookies.jwt);
+
   return (
     <div className="min-h-[80vh] my-10 mt-0 px-32">
       <h1 className="text-6xl text-gray-900 mb-5">Edit Gig</h1>
