@@ -97,9 +97,7 @@ function Navbar() {
             {
               withCredentials: true,
               headers: {
-                Authorization: typeof cookies.jwt === 'string'
-                  ? `Bearer ${cookies.jwt}`
-                  : `Bearer ${JSON.stringify(cookies.jwt)}`
+                Authorization: `Bearer ${cookies.jwt}`
               },
             }
           );
