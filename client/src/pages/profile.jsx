@@ -22,8 +22,8 @@ function Profile() {
   const [errorMessage, setErrorMessage] = useState("");
   const [data, setData] = useState({
     userName: "",
-    fullName: "",
-    description: "",
+    fullName: "John",
+    description: " ",
   });
 
   // ✅ Ensure Axios sends cookies with requests
@@ -127,6 +127,12 @@ function Profile() {
       router.push("/");
     } catch (err) {
       console.error("❌ Profile update failed:", err);
+      if (error.response) {
+        // The server responded with a status code outside the 2xx range
+        console.log("Error response data:", error.response.data);
+        console.log("Error response status:", error.response.status);
+        console.log("Error response headers:", error.response.headers);
+      }
     }
   };
 
@@ -223,7 +229,16 @@ function Profile() {
                 />
               </div>
             </div>
-
+            <div>
+              <label className={labelClassName}>Description</label>
+              <textarea
+                className={inputClassName}
+                name="description"
+                placeholder="Tell us about yourself"
+                value={data.description}
+                onChange={handleChange}
+              />
+            </div>
             {/* Submit Button */}
             <button
               className="border text-lg font-semibold px-5 py-3 border-[#1DBF73] bg-[#1DBF73] text-white rounded-md"
