@@ -186,24 +186,25 @@ function Navbar() {
           ) : (
             <ul className="flex gap-10 items-center">
               {/* Orders Button */}
-              <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={handleOrdersNavigate}>Orders</li>
+              <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={handleOrdersNavigate}>
+                Orders
+              </li>
 
               {/* Seller-Specific Buttons */}
               {isSeller && (
                 <>
-                  <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={() => router.push("/seller/gigs/create")}>Create Gig</li>
-                  <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={() => router.push("/seller/gigs")}>Manage Gigs</li>
+                  <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={() => router.push("/seller/gigs/create")}>
+                    Create Gig
+                  </li>
+                  <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={() => router.push("/seller/gigs")}>
+                    Manage Gigs
+                  </li>
                 </>
-              )}
-
-              {/* Buyer-Specific Button */}
-              {!isSeller && (
-                <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={handleModeSwitch}>Become a Seller</li>
               )}
 
               {/* Switch Role Button */}
               <li className="cursor-pointer font-medium" onClick={handleModeSwitch}>
-                {isSeller ? "Switch To Buyer" : "Switch To Seller"}
+                {isSeller ? "Switch to Buyer" : "Switch to Seller"}
               </li>
 
               {/* Profile Menu */}
