@@ -85,10 +85,10 @@ function Navbar() {
           // Extract the actual token string from the cookie
           // If cookies.jwt is an object with a token property, use that
           // Otherwise try to use it directly as a string
-          const tokenValue = typeof cookies.jwt === 'object' 
-            ? cookies.jwt.token || JSON.stringify(cookies.jwt) 
+          const tokenValue = typeof cookies.jwt === 'object'
+            ? cookies.jwt.token || JSON.stringify(cookies.jwt)
             : cookies.jwt;
-            
+
           console.log("📡 Fetching user info with JWT token");
 
           const response = await axios.post(
@@ -97,7 +97,9 @@ function Navbar() {
             {
               withCredentials: true,
               headers: {
-                Authorization: `Bearer ${tokenValue}`, // Use the extracted token value
+                Authorization: typeof cookies.jwt === 'string'
+                  ? `Bearer ${cookies.jwt}`
+                  : `Bearer ${JSON.stringify(cookies.jwt)}`
               },
             }
           );
@@ -139,7 +141,7 @@ function Navbar() {
 
   // Context menu state
   const [isContextMenuVisible, setIsContextMenuVisible] = useState(false);
-  
+
   // Handle closing context menu on outside click
   useEffect(() => {
     const clickListener = (e) => {
@@ -180,9 +182,8 @@ function Navbar() {
     <>
       {isLoaded && (
         <nav
-          className={`w-full px-24 flex justify-between items-center py-6 top-0 z-30 transition-all duration-300 ${
-            navFixed || userInfo ? "fixed bg-white border-b border-gray-200" : "absolute bg-transparent border-transparent"
-          }`}
+          className={`w-full px-24 flex justify-between items-center py-6 top-0 z-30 transition-all duration-300 ${navFixed || userInfo ? "fixed bg-white border-b border-gray-200" : "absolute bg-transparent border-transparent"
+            }`}
         >
           {/* Logo */}
           <div>
