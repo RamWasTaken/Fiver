@@ -14,6 +14,7 @@ import React, { useEffect, useState } from "react";
 
 function Profile() {
   const router = useRouter();
+  const [cookies] = useCookies(['jwt']);
   const [{ userInfo }, dispatch] = useStateProvider();
   const [isLoaded, setIsLoaded] = useState(false);
   const [imageHover, setImageHover] = useState(false);
