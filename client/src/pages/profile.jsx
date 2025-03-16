@@ -1,5 +1,6 @@
 import { useStateProvider } from "../context/StateContext";
 import { reducerCases } from "../context/constants";
+import { useCookies } from "react-cookie";
 import {
   HOST,
   IMAGES_URL,
@@ -84,7 +85,7 @@ function Profile() {
       // ✅ Send profile info update request
       const response = await axios.post(SET_USER_INFO, data, {
         headers: {
-          Authorization: `Bearer ${document.cookie.split('jwt=')[1].split(';')[0]}`
+          Authorization: `Bearer ${cookies.jwt}`
         }
       });
 
@@ -105,7 +106,7 @@ function Profile() {
         const imgResponse = await axios.post(SET_USER_IMAGE, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${document.cookie.split('jwt=')[1].split(';')[0]}`
+            Authorization: `Bearer ${cookies.jwt}`
           },
         });
 
