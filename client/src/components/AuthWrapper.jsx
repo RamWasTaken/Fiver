@@ -9,10 +9,10 @@ import { useStateProvider } from "../context/StateContext";
 import { reducerCases } from "../context/constants";
 
 function AuthWrapper({ type }) {
-  const [cookies, setCookies] = useCookies();
+  const [cookies, setCookies] = useCookies(['jwt']);
   const [{ showLoginModal, showSignupModal }, dispatch] = useStateProvider();
   const router = useRouter();
-
+  const [errorMessage, setErrorMessage] = useState("");
   const [values, setValues] = useState({ email: "", password: "" });
 
   useEffect(() => {
@@ -37,7 +37,7 @@ function AuthWrapper({ type }) {
           { email, password },
           { withCredentials: true, headers: { "Content-Type": "application/json" } }
         );
-        setCookies("jwt", jwt);
+        setCookies("jwt", jwt, { path: '/' });
         dispatch({ type: reducerCases.CLOSE_AUTH_MODAL });
 
         if (user) {
@@ -47,6 +47,7 @@ function AuthWrapper({ type }) {
       }
     } catch (err) {
       console.log(err);
+      setErrorMessage("Login/Signup failed. Please try again.");
     }
   };
 

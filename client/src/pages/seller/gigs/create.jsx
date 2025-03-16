@@ -7,7 +7,7 @@ import React, { useState } from "react";
 import { useCookies } from "react-cookie";
 
 function CreateGigs() {
-  const [cookies] = useCookies();
+  const [cookies] = useCookies(['jwt']);
   const router = useRouter();
   const inputClassName =
     "block p-4 w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50  focus:ring-blue-500 focus:border-blue-500";
@@ -88,7 +88,7 @@ function CreateGigs() {
           withCredentials: true,
           headers: {
             "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${String(token)}`, // ✅ Ensure it's a string
+            Authorization: `Bearer ${String(token)}`, // Ensure it's a string
           },
           params: gigData,
         });

@@ -1,6 +1,7 @@
 import { useStateProvider } from "../../context/StateContext";
 import { GET_UNREAD_MESSAGES, MARK_AS_READ_ROUTE } from "../../utils/constants";
 
+import { useCookies } from "react-cookie"; // Import useCookies
 import axios from "axios";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
@@ -8,23 +9,34 @@ import React, { useEffect, useState } from "react";
 function UnreadMessages() {
   const [{ userInfo }] = useStateProvider();
   const [messages, setMessages] = useState([]);
+  const [cookies] = useCookies(['jwt']);
   useEffect(() => {
     const getUnreadMessages = async () => {
       const {
         data: { messages: unreadMessages },
-      } = await axios.get(GET_UNREAD_MESSAGES, { withCredentials: true });
+      } = await axios.get(GET_UNREAD_MESSAGES, {
+        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
+        },
+      });
       setMessages(unreadMessages);
     };
     if (userInfo) {
       getUnreadMessages();
     }
-  }, [userInfo]);
+  }, [userInfo, cookies.jwt]);
 
   const markAsRead = async (id) => {
     const response = await axios.put(
       `${MARK_AS_READ_ROUTE}/${id}`,
       {},
-      { withCredentials: true }
+      {
+        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
+        },
+      }
     );
     if (response.status === 200) {
       const clonedMessages = [...messages];
@@ -63,7 +75,7 @@ function UnreadMessages() {
               return (
                 <tr
                   className="bg-white dark:bg-gray-800 hover:bg-gray-50"
-                  key={message.text}
+                  key={message.id}
                 >
                   <th scope="row" className="px-6 py-4 ">
                     {message?.text}

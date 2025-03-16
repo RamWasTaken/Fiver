@@ -5,18 +5,24 @@ import axios from "axios";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
 import { FaStar } from "react-icons/fa";
+import { useCookies } from "react-cookie";
 
 function AddReview() {
   const [{}, dispatch] = useStateProvider();
   const [data, setData] = useState({ reviewText: "", rating: 0 });
   const router = useRouter();
   const { gigId } = router.query;
+  const [cookies] = useCookies(['jwt']);
   const addReview = async () => {
     try {
       const response = await axios.post(
         `${ADD_REVIEW}/${gigId}`,
         { ...data },
-        { withCredentials: true }
+        { withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
+          },
+         }
       );
       if (response.status === 201) {
         setData({ reviewText: "", rating: 0 });

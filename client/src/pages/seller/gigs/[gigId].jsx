@@ -7,7 +7,7 @@ import React, { useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 
 function EditGig() {
-  const [cookies] = useCookies();
+  const [cookies] = useCookies(['jwt']);
   const router = useRouter();
   const { gigId } = router.query;
   const inputClassName =
@@ -48,19 +48,23 @@ function EditGig() {
       try {
         const {
           data: { gig },
-        } = await axios.get(`${GET_GIG_DATA}/${gigId}`);
+        } = await axios.get(`${GET_GIG_DATA}/${gigId}`, {
+          headers: {
+            Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
+          },
+        });
 
         setData({ ...gig, time: gig.revisions });
         setfeatures(gig.features);
 
         gig.images.forEach((image) => {
-          const url = "http://localhost:8747/uploads/" + image;
+          const url = `${process.env.NEXT_PUBLIC_SERVER_URL}/uploads/${image}`;
           const fileName = image;
           fetch(url).then(async (response) => {
             const contentType = response.headers.get("content-type");
             const blob = await response.blob();
             const files = new File([blob], fileName, { contentType });
-            setFile([files]);
+            setFile((prevFiles) => [...prevFiles, files]);
           });
         });
       } catch (err) {
@@ -68,7 +72,7 @@ function EditGig() {
       }
     };
     if (gigId) fetchGigData();
-  }, [gigId]);
+  }, [gigId, cookies.jwt]);
 
   const editGig = async () => {
     const { category, description, price, revisions, time, title, shortDesc } =
@@ -104,7 +108,7 @@ function EditGig() {
           withCredentials: true,
           headers: {
             "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${String(cookies.jwt)}`,
+            Authorization: `Bearer ${String(cookies.jwt)}`, // Add the Authorization header
           },
           params: gigData,
         }

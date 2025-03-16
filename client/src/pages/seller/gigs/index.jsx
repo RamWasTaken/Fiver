@@ -2,16 +2,21 @@ import { GET_USER_GIGS_ROUTE } from "../../../utils/constants";
 import axios from "axios";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import { useCookies } from "react-cookie";
 
 function Index() {
+  const [cookies] = useCookies(['jwt']); 
   const [gigs, setGigs] = useState([]);
   useEffect(() => {
     const getUserGigs = async () => {
       try {
         const {
           data: { gigs: gigsData },
-        } = await axios.get(GET_USER_GIGS_ROUTE, {
+        } =  await axios.get(GET_USER_GIGS_ROUTE, {
           withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${String(cookies.jwt)}`, // Add the Authorization header
+          },
         });
         setGigs(gigsData);
       } catch (err) {
@@ -19,7 +24,7 @@ function Index() {
       }
     };
     getUserGigs();
-  }, []);
+  }, [cookies.jwt]);
   return (
     <div className="min-h-[80vh] my-10 mt-0 px-32">
       <h3 className="m-5 text-2xl font-semibold">All your Gigs</h3>

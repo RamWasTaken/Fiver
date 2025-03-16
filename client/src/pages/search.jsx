@@ -2,18 +2,25 @@ import SearchGridItem from "../components/Search/SearchGridItem";
 import { SEARCH_GIGS_ROUTE } from "../utils/constants";
 import axios from "axios";
 import { useRouter } from "next/router";
+import { useCookies } from "react-cookie";
 import React, { useEffect, useState } from "react";
 function Search() {
   const router = useRouter();
   const { category, q } = router.query;
   const [gigs, setGigs] = useState(undefined);
+  const [cookies] = useCookies(['jwt']);
   useEffect(() => {
     const getData = async () => {
       try {
         const {
           data: { gigs },
         } = await axios.get(
-          `${SEARCH_GIGS_ROUTE}?searchTerm=${q}&category=${category}`
+          `${SEARCH_GIGS_ROUTE}?searchTerm=${q}&category=${category}`,
+          {
+            headers: {
+              Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
+            },
+          }
         );
         setGigs(gigs);
       } catch (err) {
@@ -21,7 +28,7 @@ function Search() {
       }
     };
     if (category || q) getData();
-  }, [category, q]);
+  }, [category, q, cookies.jwt]);
   return (
     <>
       {gigs && (

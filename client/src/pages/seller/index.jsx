@@ -4,16 +4,21 @@ import axios from "axios";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
+import { useCookies } from "react-cookie";
 
 function Index() {
   const [{ userInfo }] = useStateProvider();
   const router = useRouter();
   const [dashboardData, setDashboardData] = useState(undefined);
+  const [cookies] = useCookies(['jwt']); 
   useEffect(() => {
     const getBuyerDashboardData = async () => {
       const response = await axios.get(GET_SELLER_DASHBOARD_DATA, {
         withCredentials: true,
-      });
+        headers: {
+            Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
+          },
+        });
       if (response.status === 200) {
         setDashboardData(response.data.dashboardData);
       }
@@ -22,7 +27,7 @@ function Index() {
     if (userInfo) {
       getBuyerDashboardData();
     }
-  }, [userInfo]);
+  }, [userInfo, cookies.jwt]);
   return (
     <>
       {userInfo && (

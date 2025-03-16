@@ -6,6 +6,7 @@ import { CREATE_ORDER } from "../utils/constants";
 import { Elements } from "@stripe/react-stripe-js";
 import CheckoutForm from "../components/CheckoutForm";
 import { useRouter } from "next/router";
+import { useCookies } from "react-cookie"; 
 
 const stripePromise = loadStripe("pk_test_xeqIPdYS2PpKbHmKG4gJqpde");
 
@@ -13,17 +14,23 @@ function Checkout() {
   const [clientSecret, setClientSecret] = useState("");
   const router = useRouter();
   const { gigId } = router.query;
+  const [cookies] = useCookies(['jwt']);
   useEffect(() => {
     const createOrderIntent = async () => {
       const { data } = await axios.post(
         CREATE_ORDER,
         { gigId },
-        { withCredentials: true }
-      );
+        {
+            withCredentials: true,
+            headers: {
+              Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
+            },
+          }
+        );
       setClientSecret(data.clientSecret);
     };
     if (gigId) createOrderIntent();
-  }, [gigId]);
+  }, [gigId,cookies.jwt]);
 
   const appearance = {
     theme: "stripe",

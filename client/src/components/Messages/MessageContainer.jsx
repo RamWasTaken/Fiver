@@ -5,17 +5,22 @@ import axios from "axios";
 import { ADD_MESSAGE, GET_MESSAGES } from "../../utils/constants";
 import { useRouter } from "next/router";
 import { useStateProvider } from "../../context/StateContext";
+import { useCookies } from "react-cookie";
 function MessageContainer() {
   const router = useRouter();
   const { orderId } = router.query;
   const [{ userInfo }] = useStateProvider();
   const [recipentId, setRecipentId] = useState(undefined);
+  const [cookies] = useCookies(['jwt']);
   useEffect(() => {
     const getMessages = async () => {
       const {
         data: { messages: dataMessages, recipentId: recipent },
       } = await axios.get(`${GET_MESSAGES}/${orderId}`, {
         withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
+        },
       });
       setMessages(dataMessages);
       setRecipentId(recipent);
@@ -23,7 +28,7 @@ function MessageContainer() {
     if (orderId && userInfo) {
       getMessages();
     }
-  }, [orderId, userInfo]);
+  }, [orderId, userInfo, cookies.jwt]);
 
   function formatTime(timestamp) {
     const date = new Date(timestamp);
@@ -44,8 +49,13 @@ function MessageContainer() {
       const response = await axios.post(
         `${ADD_MESSAGE}/${orderId}`,
         { message: messageText, recipentId },
-        { withCredentials: true }
-      );
+        {
+            withCredentials: true,
+            headers: {
+              Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
+            },
+          }
+        );
       if (response.status === 201) {
         setMessages([...messages, response.data.message]);
         setMessageText("");
@@ -61,18 +71,16 @@ function MessageContainer() {
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${
-                    message.senderId === userInfo.id
+                  className={`flex ${message.senderId === userInfo.id
                       ? "justify-end"
                       : "justify-start"
-                  }`}
+                    }`}
                 >
                   <div
-                    className={`inline-block rounded-lg ${
-                      message.senderId === userInfo.id
+                    className={`inline-block rounded-lg ${message.senderId === userInfo.id
                         ? "bg-[#1DBF73] text-white"
                         : "bg-gray-100 text-gray-800"
-                    } px-4 py-2 max-w-xs break-all`}
+                      } px-4 py-2 max-w-xs break-all`}
                   >
                     <p>{message.text}</p>
                     <span className="text-sm text-gray-600">
