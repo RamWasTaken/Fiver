@@ -26,19 +26,13 @@ const allowedOrigins = process.env.ORIGIN
 // ✅ 2️⃣ Set up CORS to allow requests from frontend
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.error("❌ Blocked CORS request from:", origin);
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Allowed methods
-    allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
-    credentials: true, // Allow cookies & auth headers
+    origin: allowedOrigins, // ✅ Always allow defined origins
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true, // ✅ Allow sending cookies & auth headers
   })
 );
+
 
 // ✅ 3️⃣ Middleware for handling JSON requests & cookies
 app.use(express.json()); // Parse JSON bodies

@@ -82,7 +82,14 @@ function Navbar() {
             return;
           }
 
-          console.log("📡 Fetching user info with JWT:", cookies.jwt);
+          // Extract the actual token string from the cookie
+          // If cookies.jwt is an object with a token property, use that
+          // Otherwise try to use it directly as a string
+          const tokenValue = typeof cookies.jwt === 'object' 
+            ? cookies.jwt.token || JSON.stringify(cookies.jwt) 
+            : cookies.jwt;
+            
+          console.log("📡 Fetching user info with JWT token");
 
           const response = await axios.post(
             GET_USER_INFO,
@@ -90,7 +97,7 @@ function Navbar() {
             {
               withCredentials: true,
               headers: {
-                Authorization: `Bearer ${String(cookies.jwt)}`, // Ensure JWT is a string
+                Authorization: `Bearer ${tokenValue}`, // Use the extracted token value
               },
             }
           );
@@ -120,7 +127,7 @@ function Navbar() {
             router.push("/profile");
           }
         } catch (err) {
-          console.error("❌ Error fetching user info:", err.response?.data?.message || err.message);
+          console.error("❌ Error fetching user info:", err.response?.data?.error || err.message);
         }
       };
 
