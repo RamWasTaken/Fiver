@@ -29,12 +29,12 @@ function Profile() {
 
   useEffect(() => {
     const handleData = { ...data };
-    
+
     if (userInfo) {
       if (userInfo?.username) handleData.userName = userInfo?.username;
       if (userInfo?.description) handleData.description = userInfo?.description;
       if (userInfo?.fullName) handleData.fullName = userInfo?.fullName;
-      
+
       console.log("🔍 User Info:", userInfo);
 
       // ✅ If user has a profile image, fetch & convert it to File object
@@ -45,7 +45,7 @@ function Profile() {
             const blob = await response.blob();
 
             // ✅ Ensure the file is properly named
-            const fileName = userInfo.imageName.split("/").pop(); 
+            const fileName = userInfo.imageName.split("/").pop();
             const file = new File([blob], fileName, { type: contentType });
 
             setImage(file);
@@ -80,12 +80,16 @@ function Profile() {
   const setProfile = async () => {
     try {
       console.log("🔍 Sending profile data:", data);
-      
+
       // ✅ Send profile info update request
-      const response = await axios.post(SET_USER_INFO, data);
-      
+      const response = await axios.post(SET_USER_INFO, data, {
+        headers: {
+          Authorization: `Bearer ${document.cookie.split('jwt=')[1].split(';')[0]}`
+        }
+      });
+
       console.log("✅ Profile update response:", response.data);
-      
+
       if (response.data.userNameError) {
         setErrorMessage("Enter a Unique Username");
         return;
@@ -101,6 +105,7 @@ function Profile() {
         const imgResponse = await axios.post(SET_USER_IMAGE, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${document.cookie.split('jwt=')[1].split(';')[0]}`
           },
         });
 
@@ -164,9 +169,8 @@ function Profile() {
                   </span>
                 )}
                 <div
-                  className={`absolute bg-slate-400 h-full w-full rounded-full flex items-center justify-center transition-all duration-100 ${
-                    imageHover ? "opacity-100" : "opacity-0"
-                  }`}
+                  className={`absolute bg-slate-400 h-full w-full rounded-full flex items-center justify-center transition-all duration-100 ${imageHover ? "opacity-100" : "opacity-0"
+                    }`}
                 >
                   <span className="flex items-center justify-center relative">
                     <svg
