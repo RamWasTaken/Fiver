@@ -71,7 +71,6 @@ function Navbar() {
     dispatch({ type: reducerCases.SWITCH_MODE });
     router.push(isSeller ? "/buyer/orders" : "/seller");
   };
-
   // Fetch user info if JWT exists and user is not already set
   useEffect(() => {
     if (cookies.jwt && !userInfo) {
@@ -81,13 +80,6 @@ function Navbar() {
             console.error("❌ JWT token is missing!");
             return;
           }
-
-          // Extract the actual token string from the cookie
-          // If cookies.jwt is an object with a token property, use that
-          // Otherwise try to use it directly as a string
-          const tokenValue = typeof cookies.jwt === 'object'
-            ? cookies.jwt.token || JSON.stringify(cookies.jwt)
-            : cookies.jwt;
 
           console.log("📡 Fetching user info with JWT token");
 
