@@ -23,7 +23,7 @@ const Profile = () => {
 
   const [image, setImage] = useState(userInfo?.image || '');
   const [errorMessage, setErrorMessage] = useState('');
-  
+
   useEffect(() => {
     if (!cookies.jwt) router.push('/login');
   }, [cookies, router]);
@@ -36,13 +36,13 @@ const Profile = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (!validTypes.includes(file.type)) {
       setErrorMessage('Invalid image format. Please upload JPG, PNG, or GIF.');
       return;
     }
-    
+
     const reader = new FileReader();
     reader.onloadend = () => setImage(reader.result);
     reader.readAsDataURL(file);
@@ -80,13 +80,13 @@ const Profile = () => {
         </div>
         <input type="file" accept="image/*" onChange={handleFileChange} className="mb-4" />
 
-        <input type="text" name="firstName" value={data.firstName} onChange={handleInputChange} placeholder="First Name" className="input-field" />
-        <input type="text" name="lastName" value={data.lastName} onChange={handleInputChange} placeholder="Last Name" className="input-field" />
-        <input type="text" name="userName" value={data.userName} onChange={handleInputChange} placeholder="Username" className="input-field" />
-        <textarea name="about" value={data.about} onChange={handleInputChange} placeholder="About Me" className="input-field" />
-        
+        <input type="text" className="text-black bg-gray-200 " name="firstName" value={data.firstName} onChange={handleInputChange} placeholder="First Name" className="input-field" />
+        <input type="text" className="text-black bg-gray-200 " name="lastName" value={data.lastName} onChange={handleInputChange} placeholder="Last Name" className="input-field" />
+        <input type="text" className="text-black bg-gray-200 " name="userName" value={data.userName} onChange={handleInputChange} placeholder="Username" className="input-field" />
+        <textarea name="about" className="text-black bg-gray-200 " value={data.about} onChange={handleInputChange} placeholder="About Me" className="input-field" />
+
         {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
-        
+
         <button onClick={handleProfileUpdate} className="mt-4 bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700">Update Profile</button>
       </div>
     </div>
