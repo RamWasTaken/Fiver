@@ -16,7 +16,7 @@ function CreateGigs() {
   const [features, setfeatures] = useState([]);
   const [data, setData] = useState({
     title: "",
-    category: "",
+    category: categories[0]?.name || "",
     description: "",
     time: 0,
     revisions: 0,
@@ -24,6 +24,7 @@ function CreateGigs() {
     price: 0,
     shortDesc: "",
   });
+  console.log("🚀 Category being sent:", data.category);
 
   // Function to remove a feature from the list
   const removeFeature = (index) => {
@@ -134,14 +135,16 @@ function CreateGigs() {
               className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-4"
               name="category"
               onChange={handleChange}
-              defaultValue="Choose a Category"
+              value={data.category}
             >
+              <option value="" disabled>Choose a Category</option> {/* Disabled option */}
               {categories.map(({ name }) => (
                 <option key={name} value={name}>
                   {name}
                 </option>
               ))}
             </select>
+
           </div>
         </div>
         <div>
