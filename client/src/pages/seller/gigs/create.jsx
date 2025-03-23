@@ -191,6 +191,21 @@ function CreateGigs() {
               Features
             </label>
             <div className="flex gap-3 items-center mb-5">
+              <ul>
+                {features.map((feature, index) => (
+                  <li key={index} className="flex justify-between items-center border p-2 my-2">
+                    {feature}
+                    <button
+                      type="button"
+                      className="text-red-500 font-bold ml-3"
+                      onClick={() => removeFeature(index)}
+                    >
+                      X
+                    </button>
+                  </li>
+                ))}
+              </ul>
+
               <input
                 type="text"
                 id="features"
@@ -207,6 +222,7 @@ function CreateGigs() {
               >
                 Add
               </button>
+
             </div>
           </div>
           <div>
