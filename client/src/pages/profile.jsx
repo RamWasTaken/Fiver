@@ -79,11 +79,38 @@ const Profile = () => {
           )}
         </div>
         <input type="file" accept="image/*" onChange={handleFileChange} className="mb-4" />
+        <input
+          type="text"
+          className="text-black bg-gray-200 input-field"
+          name="firstName"
+          value={data.firstName}
+          onChange={handleInputChange}
+          placeholder="First Name"
+        />
+        <input
+          type="text"
+          className="text-black bg-gray-200 input-field"
+          name="lastName"
+          value={data.lastName}
+          onChange={handleInputChange}
+          placeholder="Last Name"
+        />
+        <input
+          type="text"
+          className="text-black bg-gray-200 input-field"
+          name="userName"
+          value={data.userName}
+          onChange={handleInputChange}
+          placeholder="Username"
+        />
+        <textarea
+          name="about"
+          className="text-black bg-gray-200 input-field"
+          value={data.about}
+          onChange={handleInputChange}
+          placeholder="About Me"
+        />
 
-        <input type="text" className="text-black bg-gray-200 " name="firstName" value={data.firstName} onChange={handleInputChange} placeholder="First Name" className="input-field" />
-        <input type="text" className="text-black bg-gray-200 " name="lastName" value={data.lastName} onChange={handleInputChange} placeholder="Last Name" className="input-field" />
-        <input type="text" className="text-black bg-gray-200 " name="userName" value={data.userName} onChange={handleInputChange} placeholder="Username" className="input-field" />
-        <textarea name="about" className="text-black bg-gray-200 " value={data.about} onChange={handleInputChange} placeholder="About Me" className="input-field" />
 
         {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
 
