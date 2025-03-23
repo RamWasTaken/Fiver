@@ -3,6 +3,8 @@ import { genSalt, hash, compare } from "bcrypt";
 import jwt from "jsonwebtoken";
 import { renameSync } from "fs";
 
+const prisma = new PrismaClient(); // ✅ Reused PrismaClient instead of creating a new instance in each function
+
 const generatePassword = async (password) => {
   const salt = await genSalt();
   return await hash(password, salt);
@@ -10,7 +12,6 @@ const generatePassword = async (password) => {
 
 const maxAge = 3 * 24 * 60 * 60;
 const createToken = (email, userId) => {
-  // @ts-ignore
   return jwt.sign({ email, userId }, process.env.JWT_KEY, {
     expiresIn: maxAge,
   });
@@ -18,79 +19,63 @@ const createToken = (email, userId) => {
 
 export const signup = async (req, res, next) => {
   try {
-    const prisma = new PrismaClient();
     const { email, password } = req.body;
-    if (email && password) {
-      const user = await prisma.user.create({
-        data: {
-          email,
-          password: await generatePassword(password),
-        },
-      });
-      return res.status(201).json({
-        user: { id: user?.id, email: user?.email },
-        jwt: createToken(email, user.id),
-      });
-    } else {
+    if (!email || !password) {
       return res.status(400).send("Email and Password Required");
     }
+    
+    const hashedPassword = await generatePassword(password);
+    const user = await prisma.user.create({
+      data: { email, password: hashedPassword },
+    });
+
+    return res.status(201).json({
+      user: { id: user.id, email: user.email },
+      jwt: createToken(email, user.id),
+    });
   } catch (err) {
-    console.log(err);
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === "P2002") {
-        return res.status(400).send("Email Already Registered");
-      }
-    } else {
-      return res.status(500).send("Internal Server Error");
+    console.error("Signup error:", err); // ✅ Better error logging
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return res.status(400).send("Email Already Registered");
     }
-    throw err;
+    return res.status(500).send("Internal Server Error");
   }
 };
 
 export const login = async (req, res, next) => {
   try {
-    const prisma = new PrismaClient();
     const { email, password } = req.body;
-    if (email && password) {
-      const user = await prisma.user.findUnique({
-        where: {
-          email,
-        },
-      });
-      if (!user) {
-        return res.status(404).send("User not found");
-      }
-
-      const auth = await compare(password, user.password);
-      if (!auth) {
-        return res.status(400).send("Invalid Password");
-      }
-
-      return res.status(200).json({
-        user: { id: user?.id, email: user?.email },
-        jwt: createToken(email, user.id),
-      });
-    } else {
+    if (!email || !password) {
       return res.status(400).send("Email and Password Required");
     }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    const auth = await compare(password, user.password);
+    if (!auth) {
+      return res.status(400).send("Invalid Password");
+    }
+
+    return res.status(200).json({
+      user: { id: user.id, email: user.email },
+      jwt: createToken(email, user.id),
+    });
   } catch (err) {
+    console.error("Login error:", err); // ✅ Added proper error logging
     return res.status(500).send("Internal Server Error");
   }
 };
 
 export const getUserInfo = async (req, res, next) => {
   try {
-    console.log("Fetching user info for userId:", req.userId); // Debugging log
-
     if (!req.userId) {
       return res.status(401).json({ error: "Unauthorized - No user ID" });
     }
 
-    const prisma = new PrismaClient();
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId },
-    });
-
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -108,71 +93,60 @@ export const getUserInfo = async (req, res, next) => {
     });
   } catch (err) {
     console.error("Error fetching user info:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-
 export const setUserInfo = async (req, res, next) => {
   try {
-    if (req?.userId) {
-      const { userName, fullName, description } = req.body;
-      if (userName && fullName && description) {
-        const prisma = new PrismaClient();
-        const userNameValid = await prisma.user.findUnique({
-          where: { username: userName },
-        });
-        if (userNameValid) {
-          return res.status(200).json({ userNameError: true });
-        }
-        await prisma.user.update({
-          where: { id: req.userId },
-          data: {
-            username: userName,
-            fullName,
-            description,
-            isProfileInfoSet: true,
-          },
-        });
-        return res.status(200).send("Profile data updated successfully.");
-      } else {
-        return res
-          .status(400)
-          .send("Username, Full Name and description should be included.");
-      }
+    if (!req.userId) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
+
+    const { userName, fullName, description } = req.body;
+    if (!userName || !fullName || !description) {
+      return res.status(400).send("Username, Full Name, and Description should be included.");
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { username: userName } });
+    if (existingUser) {
+      return res.status(400).json({ userNameError: true });
+    }
+
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { username: userName, fullName, description, isProfileInfoSet: true },
+    });
+    return res.status(200).send("Profile data updated successfully.");
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === "P2002") {
-        return res.status(400).json({ userNameError: true });
-      }
-    } else {
-      return res.status(500).send("Internal Server Error");
+    console.error("Error setting user info:", err);
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return res.status(400).json({ userNameError: true });
     }
-    throw err;
+    return res.status(500).send("Internal Server Error");
   }
 };
 
 export const setUserImage = async (req, res, next) => {
   try {
-    if (req.file) {
-      if (req?.userId) {
-        const date = Date.now();
-        let fileName = "uploads/profiles/" + date + req.file.originalname;
-        renameSync(req.file.path, fileName);
-        const prisma = new PrismaClient();
-
-        await prisma.user.update({
-          where: { id: req.userId },
-          data: { profileImage: fileName },
-        });
-        return res.status(200).json({ img: fileName });
-      }
-      return res.status(400).send("Cookie Error.");
+    if (!req.file) {
+      return res.status(400).send("Image not included.");
     }
-    return res.status(400).send("Image not inclued.");
+    if (!req.userId) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    const date = Date.now();
+    let fileName = `uploads/profiles/${date}${req.file.originalname}`;
+    renameSync(req.file.path, fileName);
+
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { profileImage: fileName },
+    });
+    return res.status(200).json({ img: fileName });
   } catch (err) {
-    console.log(err);
-    res.status(500).send("Internal Server Occured");
+    console.error("Error setting user image:", err);
+    return res.status(500).send("Internal Server Error");
   }
 };
