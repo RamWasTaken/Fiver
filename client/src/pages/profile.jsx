@@ -1,256 +1,96 @@
-import { useStateProvider } from "../context/StateContext";
-import { reducerCases } from "../context/constants";
-import { useCookies } from "react-cookie";
-import {
-  HOST,
-  IMAGES_URL,
-  SET_USER_IMAGE,
-  SET_USER_INFO,
-} from "../utils/constants";
-import axios from "axios";
-import Image from "next/image";
-import { useRouter } from "next/router";
-import React, { useEffect, useState } from "react";
+'use client';
 
-function Profile() {
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { useCookies } from 'react-cookie';
+import { useStateProvider } from '@/context/StateContext';
+import { reducerCases } from '@/context/constants';
+import { SET_USER_IMAGE, SET_USER_INFO } from '@/utils/ApiRoutes';
+import Image from 'next/image';
+
+const Profile = () => {
   const router = useRouter();
-  const [cookies] = useCookies(['jwt']);
   const [{ userInfo }, dispatch] = useStateProvider();
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [imageHover, setImageHover] = useState(false);
-  const [image, setImage] = useState(undefined);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [cookies] = useCookies();
+
   const [data, setData] = useState({
-    userName: "",
-    fullName: "John",
-    description: " ",
+    firstName: userInfo?.firstName || '',
+    lastName: userInfo?.lastName || '',
+    about: userInfo?.about || '',
+    userName: userInfo?.userName || '',
   });
 
-  // ✅ Ensure Axios sends cookies with requests
-  axios.defaults.withCredentials = true;
-
+  const [image, setImage] = useState(userInfo?.image || '');
+  const [errorMessage, setErrorMessage] = useState('');
+  
   useEffect(() => {
-    const handleData = { ...data };
+    if (!cookies.jwt) router.push('/login');
+  }, [cookies, router]);
 
-    if (userInfo) {
-      if (userInfo?.username) handleData.userName = userInfo?.username;
-      if (userInfo?.description) handleData.description = userInfo?.description;
-      if (userInfo?.fullName) handleData.fullName = userInfo?.fullName;
-
-      console.log("🔍 User Info:", userInfo);
-
-      // ✅ If user has a profile image, fetch & convert it to File object
-      if (userInfo?.imageName) {
-        fetch(userInfo.imageName)
-          .then(async (response) => {
-            const contentType = response.headers.get("content-type");
-            const blob = await response.blob();
-
-            // ✅ Ensure the file is properly named
-            const fileName = userInfo.imageName.split("/").pop();
-            const file = new File([blob], fileName, { type: contentType });
-
-            setImage(file);
-          })
-          .catch((error) => console.error("❌ Error fetching image:", error));
-      }
-
-      setData(handleData);
-      setIsLoaded(true);
-    }
-  }, [userInfo]);
-
-  // ✅ Handle Image Selection with Error Handling
-  const handleFile = (e) => {
-    const file = e.target.files?.[0]; // Ensure file exists
-    if (!file) return; // Prevent errors when no file is selected
-
-    const validImageTypes = ["image/gif", "image/jpeg", "image/png"];
-    if (validImageTypes.includes(file.type)) {
-      setImage(file);
-    } else {
-      setErrorMessage("Invalid image format. Please upload JPG, PNG, or GIF.");
-    }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setData((prevData) => ({ ...prevData, [name]: value }));
   };
 
-  // ✅ Handle Input Changes
-  const handleChange = (e) => {
-    setData({ ...data, [e.target.name]: e.target.value });
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      setErrorMessage('Invalid image format. Please upload JPG, PNG, or GIF.');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onloadend = () => setImage(reader.result);
+    reader.readAsDataURL(file);
   };
 
-  // ✅ Handle Profile Update
-  const setProfile = async () => {
+  const handleProfileUpdate = async () => {
     try {
-      console.log("🔍 Sending profile data:", data);
-
-      // ✅ Send profile info update request
-      const response = await axios.post(SET_USER_INFO, data, {
-        headers: {
-          Authorization: `Bearer ${cookies.jwt}`
-        }
+      const response = await axios.post(SET_USER_INFO, { ...data, image }, {
+        headers: { Authorization: `Bearer ${cookies.jwt}` },
       });
 
-      console.log("✅ Profile update response:", response.data);
-
       if (response.data.userNameError) {
-        setErrorMessage("Enter a Unique Username");
+        setErrorMessage('Enter a unique username');
         return;
       }
 
-      let imageName = "";
-
-      // ✅ If an image is selected, upload it
-      if (image) {
-        const formData = new FormData();
-        formData.append("images", image);
-
-        const imgResponse = await axios.post(SET_USER_IMAGE, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${cookies.jwt}`
-          },
-        });
-
-        imageName = imgResponse.data.img;
-      }
-
-      // ✅ Update global state with new user info
-      dispatch({
-        type: reducerCases.SET_USER,
-        userInfo: {
-          ...userInfo,
-          ...data,
-          image: imageName ? `${HOST}/${imageName}` : false,
-        },
-      });
-
-      router.push("/");
+      dispatch({ type: reducerCases.SET_USER, userInfo: response.data.user });
+      router.push('/');
     } catch (err) {
-      console.error("❌ Profile update failed:", err);
-      if (error.response) {
-        // The server responded with a status code outside the 2xx range
-        console.log("Error response data:", error.response.data);
-        console.log("Error response status:", error.response.status);
-        console.log("Error response headers:", error.response.headers);
-      }
+      console.error('Profile update failed:', err);
+      setErrorMessage('Failed to update profile. Try again.');
     }
   };
 
-  // ✅ Styling for Inputs
-  const inputClassName =
-    "block p-4 w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50  focus:ring-blue-500 focus:border-blue-500";
-  const labelClassName =
-    "mb-2 text-lg font-medium text-gray-900  dark:text-white";
-
   return (
-    <>
-      {isLoaded && (
-        <div className="flex flex-col items-center justify-start min-h-[80vh] gap-3">
-          {errorMessage && (
-            <div>
-              <span className="text-red-600 font-bold">{errorMessage}</span>
-            </div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
+      <h1 className="text-3xl font-bold mb-6">Edit Profile</h1>
+      <div className="flex flex-col items-center bg-gray-800 p-6 rounded-lg shadow-lg">
+        <div className="relative w-32 h-32 mb-4">
+          {image ? (
+            <Image src={image} alt="Profile" fill className="rounded-full" />
+          ) : (
+            <span className="text-6xl">{userInfo?.email?.charAt(0).toUpperCase()}</span>
           )}
-          <h2 className="text-3xl">Welcome to Fiverr Clone</h2>
-          <h4 className="text-xl">
-            Please complete your profile to get started
-          </h4>
-          <div className="flex flex-col items-center w-full gap-5">
-            {/* Profile Image Selection */}
-            <div
-              className="flex flex-col items-center cursor-pointer"
-              onMouseEnter={() => setImageHover(true)}
-              onMouseLeave={() => setImageHover(false)}
-            >
-              <label className={labelClassName}>Select a Profile Picture</label>
-              <div className="bg-purple-500 h-36 w-36 flex items-center justify-center rounded-full relative">
-                {image ? (
-                  <Image
-                    src={URL.createObjectURL(image)}
-                    alt="profile"
-                    fill
-                    className="rounded-full"
-                  />
-                ) : (
-                  <span className="text-6xl text-white">
-                    {userInfo.email[0].toUpperCase()}
-                  </span>
-                )}
-                <div
-                  className={`absolute bg-slate-400 h-full w-full rounded-full flex items-center justify-center transition-all duration-100 ${imageHover ? "opacity-100" : "opacity-0"
-                    }`}
-                >
-                  <span className="flex items-center justify-center relative">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-12 h-12 text-white absolute"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <input
-                      type="file"
-                      onChange={handleFile}
-                      className="opacity-0"
-                      name="profileImage"
-                    />
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Username and Full Name */}
-            <div className="flex gap-4 w-[500px]">
-              <div>
-                <label className={labelClassName}>Username</label>
-                <input
-                  className={inputClassName}
-                  type="text"
-                  name="userName"
-                  placeholder="Username"
-                  value={data.userName}
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <label className={labelClassName}>Full Name</label>
-                <input
-                  className={inputClassName}
-                  type="text"
-                  name="fullName"
-                  placeholder="Full Name"
-                  value={data.fullName}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-            <div>
-              <label className={labelClassName}>Description</label>
-              <textarea
-                className={inputClassName}
-                name="description"
-                placeholder="Tell us about yourself"
-                value={data.description}
-                onChange={handleChange}
-              />
-            </div>
-            {/* Submit Button */}
-            <button
-              className="border text-lg font-semibold px-5 py-3 border-[#1DBF73] bg-[#1DBF73] text-white rounded-md"
-              onClick={setProfile}
-            >
-              Set Profile
-            </button>
-          </div>
         </div>
-      )}
-    </>
+        <input type="file" accept="image/*" onChange={handleFileChange} className="mb-4" />
+
+        <input type="text" name="firstName" value={data.firstName} onChange={handleInputChange} placeholder="First Name" className="input-field" />
+        <input type="text" name="lastName" value={data.lastName} onChange={handleInputChange} placeholder="Last Name" className="input-field" />
+        <input type="text" name="userName" value={data.userName} onChange={handleInputChange} placeholder="Username" className="input-field" />
+        <textarea name="about" value={data.about} onChange={handleInputChange} placeholder="About Me" className="input-field" />
+        
+        {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
+        
+        <button onClick={handleProfileUpdate} className="mt-4 bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700">Update Profile</button>
+      </div>
+    </div>
   );
-}
+};
 
 export default Profile;
