@@ -14,17 +14,25 @@ function MessageContainer() {
   const [cookies] = useCookies(['jwt']);
   useEffect(() => {
     const getMessages = async () => {
-      const {
-        data: { messages: dataMessages, recipentId: recipent },
-      } = await axios.get(`${GET_MESSAGES}/${orderId}`, {
-        withCredentials: true,
-        headers: {
-          Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
-        },
-      });
-      setMessages(dataMessages);
-      setRecipentId(recipent);
+      console.log("Fetching from:", `${GET_MESSAGES}/${orderId}`); // Debugging
+
+      try {
+        const {
+          data: { messages: dataMessages, recipentId: recipent },
+        } = await axios.get(`${GET_MESSAGES}/${orderId}`, {
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${cookies.jwt}`,
+          },
+        });
+
+        setMessages(dataMessages);
+        setRecipentId(recipent);
+      } catch (error) {
+        console.error("Error fetching messages:", error.response?.data || error.message);
+      }
     };
+
     if (orderId && userInfo) {
       getMessages();
     }
@@ -50,12 +58,12 @@ function MessageContainer() {
         `${ADD_MESSAGE}/${orderId}`,
         { message: messageText, recipentId },
         {
-            withCredentials: true,
-            headers: {
-              Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
-            },
-          }
-        );
+          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
+          },
+        }
+      );
       if (response.status === 201) {
         setMessages([...messages, response.data.message]);
         setMessageText("");
@@ -72,14 +80,14 @@ function MessageContainer() {
                 <div
                   key={message.id}
                   className={`flex ${message.senderId === userInfo.id
-                      ? "justify-end"
-                      : "justify-start"
+                    ? "justify-end"
+                    : "justify-start"
                     }`}
                 >
                   <div
                     className={`inline-block rounded-lg ${message.senderId === userInfo.id
-                        ? "bg-[#1DBF73] text-white"
-                        : "bg-gray-100 text-gray-800"
+                      ? "bg-[#1DBF73] text-white"
+                      : "bg-gray-100 text-gray-800"
                       } px-4 py-2 max-w-xs break-all`}
                   >
                     <p>{message.text}</p>
