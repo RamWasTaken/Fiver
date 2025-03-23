@@ -4,9 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useCookies } from 'react-cookie';
-import { useStateProvider } from '@/context/StateContext';
-import { reducerCases } from '@/context/constants';
-import { SET_USER_IMAGE, SET_USER_INFO } from '@/utils/ApiRoutes';
+import { useStateProvider } from "../context/StateContext";
+import { reducerCases } from "../context/constants";
+import { SET_USER_IMAGE, SET_USER_INFO } from '../utils/constants';
 import Image from 'next/image';
 
 const Profile = () => {
