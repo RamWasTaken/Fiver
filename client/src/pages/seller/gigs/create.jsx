@@ -24,7 +24,9 @@ function CreateGigs() {
     price: 0,
     shortDesc: "",
   });
-  console.log("🚀 Category being sent:", data.category);
+  useEffect(() => {
+  console.log("🚀 Category being sent:", category);
+}, [category]); // Only runs when `category` changes
 
   // Function to remove a feature from the list
   const removeFeature = (index) => {

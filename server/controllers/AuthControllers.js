@@ -111,7 +111,7 @@ export const setUserInfo = async (req, res, next) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // ✅ Prepare the data object with only the provided fields
+    // ✅ Prepare the data object
     const updateData = {};
     if (userName && userName !== currentUser.username) {
       const existingUser = await prisma.user.findUnique({ where: { username: userName } });
@@ -122,27 +122,33 @@ export const setUserInfo = async (req, res, next) => {
     }
     if (fullName) updateData.fullName = fullName;
     if (description) updateData.description = description;
-    if (Object.keys(updateData).length === 0) {
+
+    // ✅ Ensure profile is marked as set
+    if (Object.keys(updateData).length > 0) {
+      updateData.isProfileInfoSet = true;
+    } else {
       return res.status(400).json({ error: "No changes provided." });
     }
 
     // ✅ Update only the provided fields
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: req.userId },
       data: updateData,
     });
 
-    return res.status(200).json({ message: "Profile updated successfully." });
+    return res.status(200).json({
+      message: "Profile updated successfully.",
+      user: updatedUser, // ✅ Send updated user data back to frontend
+    });
   } catch (err) {
     console.error("Error setting user info:", err);
-
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       return res.status(400).json({ error: "Username is already taken." });
     }
-
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 export const setUserImage = async (req, res, next) => {
   try {

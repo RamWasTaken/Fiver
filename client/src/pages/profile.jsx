@@ -14,14 +14,12 @@ const Profile = () => {
   const router = useRouter();
   const [{ userInfo }, dispatch] = useStateProvider();
   const [cookies] = useCookies();
-
   // Ensure existing values are pre-filled
   const [data, setData] = useState({
-    fullName: userInfo?.fullName || "",
-    userName: userInfo?.username || "",
-    description: userInfo?.description || "",
+    fullName: userInfo?.fullName || " ",
+    userName: userInfo?.username || " ",
+    description: userInfo?.description || " ",
   });
-
   const [image, setImage] = useState(userInfo?.image || "");
   const [selectedFile, setSelectedFile] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
