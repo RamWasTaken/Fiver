@@ -1,3 +1,4 @@
+"use client"; 
 import ImageUpload from "../../../components/ImageUpload";
 import { categories } from "../../../utils/categories";
 import { ADD_GIG_ROUTE } from "../../../utils/constants";
@@ -5,6 +6,7 @@ import axios from "axios";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
 import { useCookies } from "react-cookie";
+import { useEffect } from "react";
 
 function CreateGigs() {
   const [cookies] = useCookies(['jwt']);
@@ -25,8 +27,9 @@ function CreateGigs() {
     shortDesc: "",
   });
   useEffect(() => {
-  console.log("🚀 Category being sent:", category);
-}, [category]); // Only runs when `category` changes
+    console.log("🚀 Category being sent:", data.category);
+  }, [data.category]);
+  // Only runs when `category` changes
 
   // Function to remove a feature from the list
   const removeFeature = (index) => {
@@ -58,7 +61,7 @@ function CreateGigs() {
       description &&
       title &&
       features.length &&
-      files.length &&
+      Array.isArray(files) && files.length > 0 && // ✅ Prevents crashes
       price > 0 &&
       shortDesc.length &&
       revisions > 0 &&
