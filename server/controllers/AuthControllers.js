@@ -104,26 +104,43 @@ export const setUserInfo = async (req, res, next) => {
     }
 
     const { userName, fullName, description } = req.body;
-    if (!userName || !fullName || !description) {
-      return res.status(400).send("Username, Full Name, and Description should be included.");
+
+    // ✅ Get the current user
+    const currentUser = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!currentUser) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { username: userName } });
-    if (existingUser) {
-      return res.status(400).json({ userNameError: true });
+    // ✅ Prepare the data object with only the provided fields
+    const updateData = {};
+    if (userName && userName !== currentUser.username) {
+      const existingUser = await prisma.user.findUnique({ where: { username: userName } });
+      if (existingUser && existingUser.id !== req.userId) {
+        return res.status(400).json({ error: "Username is already taken." });
+      }
+      updateData.username = userName;
+    }
+    if (fullName) updateData.fullName = fullName;
+    if (description) updateData.description = description;
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: "No changes provided." });
     }
 
+    // ✅ Update only the provided fields
     await prisma.user.update({
       where: { id: req.userId },
-      data: { username: userName, fullName, description, isProfileInfoSet: true },
+      data: updateData,
     });
-    return res.status(200).send("Profile data updated successfully.");
+
+    return res.status(200).json({ message: "Profile updated successfully." });
   } catch (err) {
     console.error("Error setting user info:", err);
+
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      return res.status(400).json({ userNameError: true });
+      return res.status(400).json({ error: "Username is already taken." });
     }
-    return res.status(500).send("Internal Server Error");
+
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
