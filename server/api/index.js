@@ -85,7 +85,9 @@ const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
     methods: ["GET", "POST"],
+    credentials: true,
   },
+  transports: ["websocket", "polling"], // ✅ Allow both transports
 });
 
 io.on("connection", (socket) => {

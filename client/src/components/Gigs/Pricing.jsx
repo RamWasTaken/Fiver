@@ -8,6 +8,9 @@ function Pricing() {
   const [{ gigData, userInfo }, dispatch] = useStateProvider();
   const router = useRouter();
 
+  console.log("📊 Pricing Component Loaded");
+  console.log("📌 gigData:", gigData);
+  console.log("📌 userInfo:", userInfo);
   return (
     <>
       {gigData && (
@@ -61,7 +64,11 @@ function Pricing() {
           {gigData.userId !== userInfo.id && (
             <div className="flex items-center justify-center mt-5">
               <button className=" w-5/6 hover:bg-[#74767e] py-1 border border-[#74767e] px-5 text-[#6c6d75] hover:text-white transition-all duration-300 text-lg rounded font-bold"
-                onClick={() => router.push(`/messages?recipientId=${gigData.userId}`)}>
+               onClick={() => {
+                  console.log(`💬 Contacting seller (User ID: ${gigData.userId})`);
+                  router.push(`/messages?recipientId=${gigData.userId}`);
+                }}
+              >
                 Contact Me
               </button>
             </div>
