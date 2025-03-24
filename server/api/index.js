@@ -1,8 +1,10 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import authRoutes from "../routes/AuthRoutes.js";
+import { createServer } from "http"; // ✅ Added for WebSockets
+import { Server } from "socket.io"; // ✅ Added for WebSockets
 import cookieParser from "cookie-parser";
+import authRoutes from "../routes/AuthRoutes.js";
 import { gigRoutes } from "../routes/GigRoutes.js";
 import { orderRoutes } from "../routes/OrderRoutes.js";
 import { messageRoutes } from "../routes/MessageRoutes.js";
@@ -13,7 +15,10 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000; // Default port
 
-// ✅ 1️⃣ Define allowed frontend origins
+// ✅ Create an HTTP server to work with Socket.io
+const server = createServer(app);
+
+// ✅ Define allowed frontend origins
 const allowedOrigins = process.env.ORIGIN
   ? process.env.ORIGIN.split(",") // Support multiple origins
   : [
@@ -24,27 +29,26 @@ const allowedOrigins = process.env.ORIGIN
       "https://fiver-frontend-ramwastaken-foxxys-projects.vercel.app",
     ];
 
-// ✅ 2️⃣ Set up CORS to allow requests from frontend
+// ✅ Set up CORS to allow requests from frontend
 app.use(
   cors({
-    origin: allowedOrigins, // ✅ Always allow defined origins
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true, // ✅ Allow sending cookies & auth headers
+    credentials: true,
   })
 );
 
-
-// ✅ 3️⃣ Middleware for handling JSON requests & cookies
-app.use(express.json({ limit: "10mb" })); // Increase limit
+// ✅ Middleware for handling JSON requests & cookies
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
-app.use(cookieParser()); // Parse cookies
+app.use(cookieParser());
 
-// ✅ 4️⃣ Serve static files for image uploads
+// ✅ Serve static files for image uploads
 app.use("/uploads", express.static("uploads"));
 app.use("/uploads/profiles", express.static("uploads/profiles"));
 
-// ✅ 5️⃣ Debugging middleware to log incoming requests
+// ✅ Debugging middleware to log incoming requests
 app.use((req, res, next) => {
   console.log("🔍 Request Debugging:");
   console.log("➡️ Origin:", req.headers.origin);
@@ -55,19 +59,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ 6️⃣ Register API routes
+// ✅ Register API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/gigs", gigRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
-// ✅ 7️⃣ Simple test route to check if server is running
+// ✅ Simple test route to check if server is running
 app.get("/test", (req, res) => {
   res.send("✅ Server is working!");
 });
 
-// ✅ 8️⃣ Catch-all error handler for CORS
+// ✅ Catch-all error handler for CORS
 app.use((err, req, res, next) => {
   if (err.message === "Not allowed by CORS") {
     res.status(403).json({ error: "CORS policy does not allow this origin." });
@@ -76,8 +80,30 @@ app.use((err, req, res, next) => {
   }
 });
 
-// ✅ 9️⃣ Start server
-app.listen(port, () => {
+// ✅ Socket.io setup
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log(`✅ User connected: ${socket.id}`);
+
+  // Handle incoming messages
+  socket.on("send_message", (data) => {
+    io.emit("receive_message", data); // Broadcast message to all users
+  });
+
+  // Handle user disconnect
+  socket.on("disconnect", () => {
+    console.log(`❌ User disconnected: ${socket.id}`);
+  });
+});
+
+// ✅ Start server with WebSockets
+server.listen(port, () => {
   console.log(`🚀 Server running on http://localhost:${port}`);
 });
 
