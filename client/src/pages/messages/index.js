@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import MessageContainer from "@/components/Messages/MessageContainer";
+import MessageContainer from "../../components/Messages/MessageContainer";
 
 const MessagesPage = () => {
   const router = useRouter();
