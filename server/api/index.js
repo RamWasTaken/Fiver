@@ -18,6 +18,7 @@ const allowedOrigins = process.env.ORIGIN
   ? process.env.ORIGIN.split(",") // Support multiple origins
   : [
       "http://localhost:3001",
+      "https://fiver-frontend-git-version-3-foxxys-projects.vercel.app",
       "https://fiver-frontend.vercel.app",
       "https://fiver-frontend-foxxys-projects.vercel.app",
       "https://fiver-frontend-ramwastaken-foxxys-projects.vercel.app",
