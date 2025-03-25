@@ -47,21 +47,43 @@ const MessageContainer = ({ recipientId }) => {
     }
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  };
+
   return (
-    <div>
-      <h2>Live Chat with {recipientId}</h2>
-      <div>
+    <div className="max-w-md mx-auto mt-10 bg-white shadow-lg rounded-lg p-4">
+      <h2 className="text-lg font-semibold text-center mb-4">Chat with {recipientId}</h2>
+      <div className="h-64 overflow-y-auto border p-3 rounded-lg bg-gray-100">
         {messages.map((msg, index) => (
-          <p key={index}><strong>{msg.sender}:</strong> {msg.text}</p>
+          <div 
+            key={index} 
+            className={`mb-2 p-2 rounded-md text-sm ${
+              msg.sender === "You" ? "bg-green-500 text-white self-end ml-auto" : "bg-gray-200 text-black"
+            } max-w-[80%]`}
+          >
+            <strong>{msg.sender}:</strong> {msg.text}
+          </div>
         ))}
       </div>
-      <input 
-        type="text" 
-        value={newMessage} 
-        onChange={(e) => setNewMessage(e.target.value)} 
-        placeholder="Type a message..."
-      />
-      <button onClick={sendMessage}>Send</button>
+      <div className="flex items-center mt-3">
+        <input 
+          type="text" 
+          value={newMessage} 
+          onChange={(e) => setNewMessage(e.target.value)} 
+          onKeyDown={handleKeyPress} 
+          placeholder="Type a message..." 
+          className="flex-1 border rounded-l-md p-2 focus:outline-none"
+        />
+        <button 
+          onClick={sendMessage} 
+          className="bg-blue-500 text-white px-4 py-2 rounded-r-md hover:bg-blue-600 transition"
+        >
+          Send
+        </button>
+      </div>
     </div>
   );
 };
