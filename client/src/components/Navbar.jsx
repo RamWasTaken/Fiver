@@ -146,9 +146,8 @@ function Navbar() {
     <>
       {isLoaded && (
         <nav
-          className={`w-full px-24 flex justify-between items-center py-6 top-0 z-30 transition-all duration-300 ${
-            navFixed || userInfo ? "fixed bg-white border-b border-gray-200" : "absolute bg-transparent border-transparent"
-          }`}
+          className={`w-full px-24 flex justify-between items-center py-6 top-0 z-30 transition-all duration-300 ${navFixed || userInfo ? "fixed bg-white border-b border-gray-200" : "absolute bg-transparent border-transparent"
+            }`}
         >
           {/* Logo */}
           <div>
@@ -165,6 +164,11 @@ function Navbar() {
               className="w-[30rem] py-2.5 px-4 border"
               value={searchData}
               onChange={(e) => setSearchData(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  router.push(`/search?q=${searchData}`);
+                }
+              }}
             />
             <button
               className="bg-gray-900 py-1.5 text-white w-16 flex justify-center items-center"

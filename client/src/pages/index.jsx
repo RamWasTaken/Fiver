@@ -15,11 +15,11 @@ function Index() {
   return (
     <div>
       <HeroBanner />
-      <Companies />
+      {/* <Companies /> */}
       <PopularServices />
-      <Everything />
-      <Services />
-      <FiverrBusiness />
+      <Everything /> {/*Modify this*/}
+      {/* <Services /> Modify this */}
+      {/* <FiverrBusiness/> */}
       <JoinFiverr />
       {(showLoginModal || showSignupModal) && (
         <AuthWrapper type={showLoginModal ? "login" : "signup"} />

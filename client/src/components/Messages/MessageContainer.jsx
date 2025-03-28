@@ -55,7 +55,7 @@ const MessageContainer = ({ recipientId }) => {
 
   return (
     <div className="max-w-md mx-auto mt-10 bg-white shadow-lg rounded-lg p-4">
-      <h2 className="text-lg font-semibold text-center mb-4">Chat with {recipientId}</h2>
+      <h2 className="text-lg font-semibold text-center mb-4">Chat</h2>
       <div className="h-64 overflow-y-auto border p-3 rounded-lg bg-gray-100">
         {messages.map((msg, index) => (
           <div 
