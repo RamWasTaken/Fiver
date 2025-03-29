@@ -9,7 +9,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // ✅ Initialize Supabase client
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 const generatePassword = async (password) => {
   const salt = await genSalt();
