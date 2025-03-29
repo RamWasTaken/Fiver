@@ -7,8 +7,8 @@ function FiverrLogo() {
       {/* Small Image */}
       <Image 
         src="/skillShare.jpg" 
-        width={50}  // Adjust width
-        height={50} // Adjust height
+        width={100}  // Adjust width
+        height={100} // Adjust height
         alt="Skill Share"
         className="rounded-lg shadow-md" // Optional styling
       />
