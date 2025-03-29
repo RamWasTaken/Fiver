@@ -1,8 +1,15 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { genSalt, hash, compare } from "bcrypt";
 import jwt from "jsonwebtoken";
-import { renameSync } from "fs";
 import { prisma } from "../prismaClient.js";
+import { createClient } from "@supabase/supabase-js";
+import { v4 as uuidv4 } from "uuid";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+// ✅ Initialize Supabase client
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 const generatePassword = async (password) => {
   const salt = await genSalt();
@@ -22,7 +29,7 @@ export const signup = async (req, res, next) => {
     if (!email || !password) {
       return res.status(400).send("Email and Password Required");
     }
-    
+
     const hashedPassword = await generatePassword(password);
     const user = await prisma.user.create({
       data: { email, password: hashedPassword },
@@ -33,7 +40,7 @@ export const signup = async (req, res, next) => {
       jwt: createToken(email, user.id),
     });
   } catch (err) {
-    console.error("Signup error:", err); // ✅ Better error logging
+    console.error("Signup error:", err);
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       return res.status(400).send("Email Already Registered");
     }
@@ -63,7 +70,7 @@ export const login = async (req, res, next) => {
       jwt: createToken(email, user.id),
     });
   } catch (err) {
-    console.error("Login error:", err); // ✅ Added proper error logging
+    console.error("Login error:", err);
     return res.status(500).send("Internal Server Error");
   }
 };
@@ -78,8 +85,8 @@ export const getUserInfo = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    //lets log the users info in console:
-    console.log("User info:", user); // ✅ Added logging for debugging
+
+    console.log("User info:", user);
     return res.status(200).json({
       user: {
         id: user.id,
@@ -104,14 +111,12 @@ export const setUserInfo = async (req, res, next) => {
     }
 
     const { userName, fullName, description } = req.body;
-
-    // ✅ Get the current user
     const currentUser = await prisma.user.findUnique({ where: { id: req.userId } });
+
     if (!currentUser) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // ✅ Prepare the data object
     const updateData = {};
     if (userName && userName !== currentUser.username) {
       const existingUser = await prisma.user.findUnique({ where: { username: userName } });
@@ -123,14 +128,12 @@ export const setUserInfo = async (req, res, next) => {
     if (fullName) updateData.fullName = fullName;
     if (description) updateData.description = description;
 
-    // ✅ Ensure profile is marked as set
     if (Object.keys(updateData).length > 0) {
       updateData.isProfileInfoSet = true;
     } else {
       return res.status(400).json({ error: "No changes provided." });
     }
 
-    // ✅ Update only the provided fields
     const updatedUser = await prisma.user.update({
       where: { id: req.userId },
       data: updateData,
@@ -138,7 +141,7 @@ export const setUserInfo = async (req, res, next) => {
 
     return res.status(200).json({
       message: "Profile updated successfully.",
-      user: updatedUser, // ✅ Send updated user data back to frontend
+      user: updatedUser,
     });
   } catch (err) {
     console.error("Error setting user info:", err);
@@ -149,9 +152,11 @@ export const setUserInfo = async (req, res, next) => {
   }
 };
 
-
 export const setUserImage = async (req, res, next) => {
   try {
+    console.log("Received file:", req.file);
+    console.log("Received user ID:", req.userId);
+
     if (!req.file) {
       return res.status(400).send("Image not included.");
     }
@@ -159,15 +164,30 @@ export const setUserImage = async (req, res, next) => {
       return res.status(401).send("Unauthorized");
     }
 
-    const date = Date.now();
-    let fileName = `uploads/profiles/${date}${req.file.originalname}`;
-    renameSync(req.file.path, fileName);
+    const { buffer, mimetype } = req.file;
+    const fileName = `profile-pictures/${uuidv4()}.${mimetype.split("/")[1]}`;
 
+    // ✅ Upload image to Supabase Storage
+    const { data, error } = await supabase.storage.from("profile-pictures").upload(fileName, buffer, {
+      contentType: mimetype,
+      upsert: true,
+    });
+
+    if (error) {
+      console.error("Error uploading to Supabase:", error);
+      return res.status(500).send("Failed to upload image.");
+    }
+
+    // ✅ Get the public URL of the uploaded image
+    const { publicUrl } = supabase.storage.from("profile-pictures").getPublicUrl(fileName);
+
+    // ✅ Save the public URL in the database
     await prisma.user.update({
       where: { id: req.userId },
-      data: { profileImage: fileName },
+      data: { profileImage: publicUrl },
     });
-    return res.status(200).json({ img: fileName });
+
+    return res.status(200).json({ img: publicUrl });
   } catch (err) {
     console.error("Error setting user image:", err);
     return res.status(500).send("Internal Server Error");

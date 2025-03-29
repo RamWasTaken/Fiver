@@ -36,7 +36,7 @@ function Details() {
             <div>
               {gigData.createdBy.profileImage ? (
                 <Image
-                  src={HOST + "/" + gigData.createdBy.profileImage}
+                  src={`https://nvzstnsvqpnjlbutomny.supabase.co/storage/v1/object/public/profile-pictures/${gigData.createdBy.profileImage}`}
                   alt="profile"
                   height={30}
                   width={30}
@@ -61,11 +61,10 @@ function Details() {
                 {[1, 2, 3, 4, 5].map((star) => (
                   <FaStar
                     key={star}
-                    className={`cursor-pointer ${
-                      Math.ceil(averageRatings) >= star
+                    className={`cursor-pointer ${Math.ceil(averageRatings) >= star
                         ? "text-yellow-400"
                         : "text-gray-300"
-                    }`}
+                      }`}
                   />
                 ))}
               </div>
@@ -93,9 +92,8 @@ function Details() {
                     width={100}
                     key={image}
                     onClick={() => setCurrentImage(image)}
-                    className={`${
-                      currentImage === image ? "" : "blur-sm"
-                    } cursor-pointer transition-all duration-500`}
+                    className={`${currentImage === image ? "" : "blur-sm"
+                      } cursor-pointer transition-all duration-500`}
                   />
                 ))}
             </div>
@@ -148,11 +146,10 @@ function Details() {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <FaStar
                         key={star}
-                        className={`cursor-pointer ${
-                          Math.ceil(gigData.averageRating) >= star
+                        className={`cursor-pointer ${Math.ceil(gigData.averageRating) >= star
                             ? "text-yellow-400"
                             : "text-gray-300"
-                        }`}
+                          }`}
                       />
                     ))}
                   </div>
