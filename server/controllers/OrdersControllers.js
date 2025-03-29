@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../prismaClient.js"; // Adjust path if needed
 import Stripe from "stripe";
 
 const stripe = new Stripe(
@@ -9,7 +9,6 @@ export const createOrder = async (req, res, next) => {
   try {
     if (req.body.gigId) {
       const { gigId } = req.body;
-      const prisma = new PrismaClient();
       const gig = await prisma.gigs.findUnique({
         where: { id: parseInt(gigId) },
       });
@@ -43,7 +42,6 @@ export const createOrder = async (req, res, next) => {
 export const confirmOrder = async (req, res, next) => {
   try {
     if (req.body.paymentIntent) {
-      const prisma = new PrismaClient();
       await prisma.orders.update({
         where: { paymentIntent: req.body.paymentIntent },
         data: { isCompleted: true },
@@ -58,7 +56,6 @@ export const confirmOrder = async (req, res, next) => {
 export const getBuyerOrders = async (req, res, next) => {
   try {
     if (req.userId) {
-      const prisma = new PrismaClient();
       const orders = await prisma.orders.findMany({
         where: { buyerId: req.userId, isCompleted: true },
         include: { gig: true },
@@ -75,7 +72,6 @@ export const getBuyerOrders = async (req, res, next) => {
 export const getSellerOrders = async (req, res, next) => {
   try {
     if (req.userId) {
-      const prisma = new PrismaClient();
       const orders = await prisma.orders.findMany({
         where: {
           gig: {

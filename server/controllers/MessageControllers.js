@@ -1,8 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../prismaClient.js";
 
 export const addMessage = async (req, res, next) => {
   try {
-    const prisma = new PrismaClient();
 
     if (
       req.userId &&

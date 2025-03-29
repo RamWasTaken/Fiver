@@ -1,5 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
+import { prisma } from "../prismaClient.js";
 import { existsSync, renameSync, unlinkSync } from "fs";
 
 export const addGig = async (req, res, next) => {
@@ -26,7 +25,7 @@ export const addGig = async (req, res, next) => {
           time,
           shortDesc,
         } = req.query;
-        const prisma = new PrismaClient();
+         
 
         await prisma.gigs.create({
           data: {
@@ -56,7 +55,7 @@ export const addGig = async (req, res, next) => {
 export const getUserAuthGigs = async (req, res, next) => {
   try {
     if (req.userId) {
-      const prisma = new PrismaClient();
+       
       const user = await prisma.user.findUnique({
         where: { id: req.userId },
         include: { gigs: true },
@@ -73,7 +72,7 @@ export const getUserAuthGigs = async (req, res, next) => {
 export const getGigData = async (req, res, next) => {
   try {
     if (req.params.gigId) {
-      const prisma = new PrismaClient();
+       
       const gig = await prisma.gigs.findUnique({
         where: { id: parseInt(req.params.gigId) },
         include: {
@@ -143,7 +142,7 @@ export const editGig = async (req, res, next) => {
           time,
           shortDesc,
         } = req.query;
-        const prisma = new PrismaClient();
+         
         const oldData = await prisma.gigs.findUnique({
           where: { id: parseInt(req.params.gigId) },
         });
@@ -179,7 +178,7 @@ export const editGig = async (req, res, next) => {
 export const searchGigs = async (req, res, next) => {
   try {
     if (req.query.searchTerm || req.query.category) {
-      const prisma = new PrismaClient();
+       
       const gigs = await prisma.gigs.findMany(
         createSearchQuery(req.query.searchTerm, req.query.category)
       );
@@ -221,7 +220,7 @@ const createSearchQuery = (searchTerm, category) => {
 
 const checkOrder = async (userId, gigId) => {
   try {
-    const prisma = new PrismaClient();
+     
     const hasUserOrderedGig = await prisma.orders.findFirst({
       where: {
         buyerId: parseInt(userId),
@@ -255,7 +254,7 @@ export const addReview = async (req, res, next) => {
     if (req.userId && req.params.gigId) {
       if (await checkOrder(req.userId, req.params.gigId)) {
         if (req.body.reviewText && req.body.rating) {
-          const prisma = new PrismaClient();
+           
           const newReview = await prisma.reviews.create({
             data: {
               rating: req.body.rating,

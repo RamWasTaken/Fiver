@@ -2,8 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { genSalt, hash, compare } from "bcrypt";
 import jwt from "jsonwebtoken";
 import { renameSync } from "fs";
-
-const prisma = new PrismaClient(); // ✅ Reused PrismaClient instead of creating a new instance in each function
+import { prisma } from "../prismaClient.js";
 
 const generatePassword = async (password) => {
   const salt = await genSalt();
@@ -79,7 +78,8 @@ export const getUserInfo = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-
+    //lets log the users info in console:
+    console.log("User info:", user); // ✅ Added logging for debugging
     return res.status(200).json({
       user: {
         id: user.id,

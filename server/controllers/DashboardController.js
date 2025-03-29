@@ -1,9 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../prismaClient.js";
 
 export const getSellerData = async (req, res, next) => {
   try {
     if (req.userId) {
-      const prisma = new PrismaClient();
       const gigs = await prisma.gigs.count({ where: { userId: req.userId } });
       const {
         _count: { id: orders },
