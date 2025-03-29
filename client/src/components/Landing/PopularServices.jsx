@@ -17,17 +17,17 @@ function PopularServices() {
       label: "Share your message",
       image: "/service4.jpeg",
     },
-    {
-      name: "Social Media",
-      label: "Reach more customers",
-      image: "/service5.jpeg",
-    },
+    // {
+    //   name: "Social Media",
+    //   label: "Reach more customers",
+    //   image: "/service5.jpeg",
+    // },
     { name: "SEO", label: "Unlock growth online", image: "/service6.jpeg" },
-    {
-      name: "Illustration",
-      label: "Color your dreams",
-      image: "/service7.jpeg",
-    },
+    // {
+    //   name: "Illustration",
+    //   label: "Color your dreams",
+    //   image: "/service7.jpeg",
+    // },
     { name: "Translation", label: "Go global", image: "/service8.jpeg" },
   ];
   return (

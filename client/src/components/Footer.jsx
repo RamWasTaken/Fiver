@@ -7,17 +7,13 @@ function Footer() {
     {
       headerName: "Explore",
       links: [
-        { name: "Categories", link: "#" },
-        { name: "About", link: "#" },
-        { name: "Support", link: "#" },
-        { name: "Community", link: "#" },
+        { name: "About", link: "#" }
       ],
     },
     {
       headerName: "Legal",
       links: [
         { name: "Privacy Policy", link: "#" },
-        { name: "Terms of Service", link: "#" },
       ],
     },
   ];
