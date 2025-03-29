@@ -4,7 +4,6 @@ import AddReview from "../../components/Gigs/AddReview";
 import Reviews from "../../components/Gigs/Reviews";
 import { FaStar } from "react-icons/fa";
 import { useStateProvider } from "../../context/StateContext";
-import { HOST } from "../../utils/constants";
 
 function Details() {
   const [{ gigData, hasOrdered }] = useStateProvider();
@@ -75,7 +74,7 @@ function Details() {
           <div className="flex flex-col gap-4">
             <div className="max-h-[1000px] max-w-[1000px] overflow-hidden">
               <Image
-                src={HOST + "/uploads/" + currentImage}
+                src={`https://nvzstnsvqpnjlbutomny.supabase.co/storage/v1/object/public/gig-images/${currentImage}`}
                 alt="Gig"
                 height={1000}
                 width={1000}
@@ -86,7 +85,7 @@ function Details() {
               {gigData.images.length > 1 &&
                 gigData.images.map((image) => (
                   <Image
-                    src={HOST + "/uploads/" + image}
+                    src={`https://nvzstnsvqpnjlbutomny.supabase.co/storage/v1/object/public/gig-images/${image}`}
                     alt="gig"
                     height={100}
                     width={100}
@@ -115,7 +114,7 @@ function Details() {
               <div>
                 {gigData.createdBy.profileImage ? (
                   <Image
-                    src={HOST + "/" + gigData.createdBy.profileImage}
+                    src={`https://nvzstnsvqpnjlbutomny.supabase.co/storage/v1/object/public/profile-pictures/${gigData.createdBy.profileImage}`}
                     alt="profile"
                     height={120}
                     width={120}
