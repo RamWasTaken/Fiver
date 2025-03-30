@@ -9,15 +9,19 @@ import { reducerCases } from "../context/constants";
 import { SET_USER_IMAGE, SET_USER_INFO } from "../utils/constants";
 import Image from "next/image";
 
+// Disable static generation for this authenticated page
+export const dynamic = 'force-dynamic';
+
 const Profile = () => {
   const router = useRouter();
   const [{ userInfo }, dispatch] = useStateProvider();
   const [cookies] = useCookies();
+  const [isLoading, setIsLoading] = useState(false); // Make sure this is defined
 
   const [data, setData] = useState({
-    fullName: userInfo?.fullName || " ",
-    userName: userInfo?.username || " ",
-    description: userInfo?.description || " ",
+    fullName: userInfo?.fullName || "",
+    userName: userInfo?.username || "",
+    description: userInfo?.description || "",
   });
   const [image, setImage] = useState(userInfo?.image || "");
   const [selectedFile, setSelectedFile] = useState(null);
