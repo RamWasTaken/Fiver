@@ -1,57 +1,97 @@
-import { prisma } from "../prismaClient.js";
 import { existsSync, mkdirSync, renameSync, unlinkSync } from "fs";
+import { prisma } from "../prismaClient.js";
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 
-export const addGig = async (req, res, next) => {
+dotenv.config();
+
+// Initialize Supabase
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+// In your backend route handler (addGig)
+export const addGig = async (req, res) => {
   try {
-    if (req.files) {
-      const fileKeys = Object.keys(req.files);
-      const fileNames = [];
+    // Parse the JSON data from form-data
+    const gigData = JSON.parse(req.body.data);
+    
+    const { 
+      title,
+      description,
+      category,
+      features,
+      price,
+      revisions,
+      time,
+      shortDesc
+    } = gigData;
 
-      if (!existsSync("uploads")) mkdirSync("uploads");
+    // Validate required fields
+    if (!title || !description || !category || !features?.length || 
+        !price || !revisions || !time || !shortDesc) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
 
-      fileKeys.forEach((file) => {
-        const date = Date.now();
-        renameSync(
-          req.files[file].path,
-          "uploads/" + date + req.files[file].originalname
-        );
-        fileNames.push(date + req.files[file].originalname);
+    // 1. Handle file uploads to Supabase
+    let imageUrls = [];
+    if (req.files && req.files.length > 0) {
+      const uploadPromises = req.files.map(async (file) => {
+        const fileExt = file.originalname.split('.').pop();
+        const fileName = `gigs/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        
+        const { error } = await supabase.storage
+          .from('gig-images')
+          .upload(fileName, file.buffer, {
+            contentType: file.mimetype,
+            upsert: false // Don't overwrite existing files
+          });
+
+        if (error) throw new Error(`Supabase upload error: ${error.message}`);
+        
+        return supabase.storage
+          .from('gig-images')
+          .getPublicUrl(fileName).data.publicUrl;
       });
 
-      if (req.query) {
-        const {
-          title,
-          description,
-          category,
-          features,
-          price,
-          revisions,
-          time,
-          shortDesc,
-        } = req.query;
-
-        await prisma.gigs.create({
-          data: {
-            title,
-            description,
-            deliveryTime: parseInt(time),
-            category,
-            features: JSON.parse(features),
-            price: parseInt(price),
-            shortDesc,
-            revisions: parseInt(revisions),
-            createdBy: { connect: { id: req.userId } },
-            images: fileNames,
-          },
-        });
-
-        return res.status(201).send("Successfully created the gig.");
-      }
+      imageUrls = await Promise.all(uploadPromises);
+    } else {
+      return res.status(400).json({ error: "At least one image is required" });
     }
-    return res.status(400).send("All properties are required.");
+
+    // 2. Create gig in database
+    const gig = await prisma.gigs.create({
+      data: {
+        title,
+        description,
+        deliveryTime: parseInt(time),
+        category,
+        features: features,
+        price: parseInt(price),
+        shortDesc,
+        revisions: parseInt(revisions),
+        userId: req.userId,
+        images: imageUrls
+      }
+    });
+
+    return res.status(201).json(gig);
+
   } catch (err) {
-    console.log(err);
-    return res.status(500).send("Internal Server Error");
+    console.error("Error creating gig:", err);
+    
+    // Clean up any uploaded files if error occurred
+    if (imageUrls?.length) {
+      await Promise.all(imageUrls.map(url => {
+        const fileName = url.split('/').pop();
+        return supabase.storage
+          .from('gig-images')
+          .remove([`gigs/${fileName}`]);
+      }));
+    }
+
+    return res.status(500).json({ 
+      error: "Failed to create gig",
+      message: err.message 
+    });
   }
 };
 

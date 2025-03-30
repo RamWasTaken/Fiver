@@ -52,61 +52,52 @@ function CreateGigs() {
   };
 
   // Function to add a new gig
-  const addGig = async () => {
-    const { category, description, price, revisions, time, title, shortDesc } = data;
+const addGig = async () => {
+  const { category, description, price, revisions, time, title, shortDesc } = data;
 
-    // Ensure all required fields are filled
-    if (
-      category &&
-      description &&
-      title &&
-      features.length &&
-      Array.isArray(files) && files.length > 0 && // ✅ Prevents crashes
-      price > 0 &&
-      shortDesc.length &&
-      revisions > 0 &&
-      time > 0
-    ) {
-      const formData = new FormData();
-      files.forEach((file) => formData.append("images", file));
-      const gigData = {
-        title,
-        description,
-        category,
-        features,
-        price,
-        revisions,
-        time,
-        shortDesc,
-      };
+  // Validate all required fields
+  if (!category || !description || !title || features.length === 0 ||
+    files.length === 0 || price <= 0 || !shortDesc || revisions <= 0 || time <= 0) {
+  alert("Please fill all required fields");
+  return;
+}
 
-      // ✅ Ensure JWT is a string before using it in headers
-      const token = cookies.jwt;
-      if (!token || typeof token !== "string") {
-        console.error("❌ JWT token is missing or invalid:", token);
-        return; // Stop execution if the token is not valid
-      }
-
-      console.log("✅ Sending request with JWT:", token);
-
-      try {
-        const response = await axios.post(ADD_GIG_ROUTE, formData, {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${String(token)}`, // Ensure it's a string
-          },
-          params: gigData,
-        });
-
-        if (response.status === 201) {
-          router.push("/seller/gigs");
-        }
-      } catch (error) {
-        console.error("❌ Error creating gig:", error.response?.data || error.message);
-      }
-    }
+  const formData = new FormData();
+  
+  // Append files
+  files.forEach((file) => formData.append("images", file));
+  
+  // Append other data as JSON
+  const gigData = {
+    title,
+    description,
+    category,
+    features, // Send as array directly
+    price,
+    revisions,
+    time,
+    shortDesc,
   };
+  
+  formData.append("data", JSON.stringify(gigData));
+
+  try {
+    const response = await axios.post(ADD_GIG_ROUTE, formData, {
+      withCredentials: true,
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${String(cookies.jwt)}`,
+      },
+    });
+
+    if (response.status === 201) {
+      router.push("/seller/gigs");
+    }
+  } catch (error) {
+    console.error("Error creating gig:", error);
+    alert(error.response?.data?.message || "Failed to create gig");
+  }
+};
 
   return (
     <div className="min-h-[80vh] my-10 mt-0 px-32 ">

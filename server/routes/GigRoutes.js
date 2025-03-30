@@ -11,7 +11,7 @@ import {
 import multer from "multer";
 import { verifyToken } from "../middlewares/AuthMiddleware.js";
 
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ storage: multer.memoryStorage() });
 
 export const gigRoutes = Router();
 
