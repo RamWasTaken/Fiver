@@ -40,6 +40,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 /** ✅ Route to upload a profile image to Supabase */
 app.post("/set-user-image", upload.single("profile"), async (req, res) => {
+  console.log("Received File from index.js:", req.file);
   try {
     const userId = req.body.userId;
     if (!req.file || !userId) {

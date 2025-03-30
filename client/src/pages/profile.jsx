@@ -1,5 +1,4 @@
 "use client";
-//keep trying.
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -14,7 +13,7 @@ const Profile = () => {
   const router = useRouter();
   const [{ userInfo }, dispatch] = useStateProvider();
   const [cookies] = useCookies();
-  // Ensure existing values are pre-filled
+
   const [data, setData] = useState({
     fullName: userInfo?.fullName || " ",
     userName: userInfo?.username || " ",
@@ -56,14 +55,21 @@ const Profile = () => {
       const formData = new FormData();
       formData.append("image", selectedFile);
 
+      // 🔹 Added Console Log for Debugging
+      console.log("Uploading image:", selectedFile.name); 
+
       const response = await axios.post(SET_USER_IMAGE, formData, {
         headers: {
           Authorization: `Bearer ${cookies.jwt}`,
           "Content-Type": "multipart/form-data",
         },
       });
+
       console.log("Full API Response:", response.data);
       console.log("Uploaded Image URL:", response.data.img);
+
+      if (!response.data.img) throw new Error("Invalid image URL received.");
+
       setImage(response.data.img);
       return response.data.img;
     } catch (err) {
@@ -87,7 +93,7 @@ const Profile = () => {
         fullName: data.fullName || userInfo.fullName,
         userName: data.userName || userInfo.username,
         description: data.description || userInfo.description,
-        image: uploadedImage,
+        image: uploadedImage, // 🔹 Ensure the uploaded image is sent
       };
 
       const response = await axios.post(SET_USER_INFO, payload, {
@@ -113,49 +119,27 @@ const Profile = () => {
       <div className="flex flex-col items-center bg-gray-800 p-6 rounded-lg shadow-lg">
         <div className="relative w-32 h-32 mb-4">
           {image ? (
-            <Image src={image.startsWith("http") ? image : "/default-image.jpeg"} alt="Profile" fill className="rounded-full" unoptimized />
+            <Image
+              src={image.startsWith("http") ? image : "/default-image.jpeg"}
+              alt="Profile"
+              fill
+              className="rounded-full"
+              unoptimized
+            />
           ) : (
             <span className="text-6xl">
               {userInfo?.email?.charAt(0).toUpperCase()}
             </span>
           )}
         </div>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="mb-4"
-        />
-        <input
-          type="text"
-          className="text-black bg-gray-200 input-field"
-          name="fullName"
-          value={data.fullName}
-          onChange={handleInputChange}
-          placeholder="Full Name"
-        />
-        <input
-          type="text"
-          className="text-black bg-gray-200 input-field"
-          name="userName"
-          value={data.userName}
-          onChange={handleInputChange}
-          placeholder="Username"
-        />
-        <textarea
-          name="description"
-          className="text-black bg-gray-200 input-field"
-          value={data.description}
-          onChange={handleInputChange}
-          placeholder="About Me"
-        />
+        <input type="file" accept="image/*" onChange={handleFileChange} className="mb-4" />
+        <input type="text" className="text-black bg-gray-200 input-field" name="fullName" value={data.fullName} onChange={handleInputChange} placeholder="Full Name" />
+        <input type="text" className="text-black bg-gray-200 input-field" name="userName" value={data.userName} onChange={handleInputChange} placeholder="Username" />
+        <textarea name="description" className="text-black bg-gray-200 input-field" value={data.description} onChange={handleInputChange} placeholder="About Me" />
 
         {errorMessage && <p className="text-red-500 mt-2">{errorMessage}</p>}
 
-        <button
-          onClick={handleProfileUpdate}
-          className="mt-4 bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
+        <button onClick={handleProfileUpdate} className="mt-4 bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700">
           Update Profile
         </button>
       </div>

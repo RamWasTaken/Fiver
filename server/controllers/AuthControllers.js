@@ -153,6 +153,7 @@ export const setUserInfo = async (req, res, next) => {
 };
 
 export const setUserImage = async (req, res, next) => {
+  console.log("Received File at AuthController:", req.file);
   try {
     console.log("Received file:", req.file);
     console.log("Received user ID:", req.userId);
