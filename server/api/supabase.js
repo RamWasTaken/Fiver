@@ -22,16 +22,17 @@ export const uploadImage = async (file) => {
         console.log("Uploading file to Supabase:", filePath);
 
         // 🔹 Upload image to Supabase Storage
-        const { data, error } = await supabase.storage.from("profile-images").upload(filePath, file.buffer, {
-            contentType: file.mimetype,
-            upsert: true,
-        });
+        const { data, error } = await supabase.storage
+            .from("profile-images")
+            .upload(filePath, file.buffer, {
+                contentType: file.mimetype,
+                upsert: true,
+            });
 
         if (error) throw error;
 
-        // 🔹 Get public URL
-        const { data: publicUrlData } = supabase.storage.from("profile-images").getPublicUrl(filePath);
-        const publicUrl = publicUrlData.publicUrl;
+        // 🔹 Get public URL correctly
+        const publicUrl = supabase.storage.from("profile-images").getPublicUrl(filePath);
 
         console.log("Image uploaded successfully:", publicUrl);
         return publicUrl;
@@ -40,3 +41,5 @@ export const uploadImage = async (file) => {
         return null;
     }
 };
+
+export default supabase;
