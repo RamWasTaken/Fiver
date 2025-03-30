@@ -62,7 +62,7 @@ const Profile = () => {
           "Content-Type": "multipart/form-data",
         },
       });
-
+      console.log("Uploaded Image URL:", response.data.img);
       setImage(response.data.img);
       return response.data.img;
     } catch (err) {
@@ -79,6 +79,7 @@ const Profile = () => {
       if (selectedFile) {
         uploadedImage = await uploadProfileImage();
         if (!uploadedImage) return;
+        setImage(uploadedImage);
       }
 
       const payload = {
@@ -111,7 +112,7 @@ const Profile = () => {
       <div className="flex flex-col items-center bg-gray-800 p-6 rounded-lg shadow-lg">
         <div className="relative w-32 h-32 mb-4">
           {image ? (
-            <Image src={image} alt="Profile" fill className="rounded-full" />
+            <Image src={image.startsWith("http") ? image : "/default-avatar.png"} alt="Profile" fill className="rounded-full" unoptimized />
           ) : (
             <span className="text-6xl">
               {userInfo?.email?.charAt(0).toUpperCase()}
