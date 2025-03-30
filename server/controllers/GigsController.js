@@ -30,7 +30,7 @@ export const addGig = async (req, res, next) => {
           shortDesc,
         } = req.query;
 
-        await prisma.gig.create({
+        await prisma.gigs.create({
           data: {
             title,
             description,
@@ -74,7 +74,7 @@ export const getUserAuthGigs = async (req, res, next) => {
 export const getGigData = async (req, res, next) => {
   try {
     if (req.params.gigId) {
-      const gig = await prisma.gig.findUnique({
+      const gig = await prisma.gigs.findUnique({
         where: { id: parseInt(req.params.gigId) },
         include: {
           reviews: { include: { reviewer: true } },
@@ -148,13 +148,13 @@ export const editGig = async (req, res, next) => {
           shortDesc,
         } = req.query;
 
-        const oldData = await prisma.gig.findUnique({
+        const oldData = await prisma.gigs.findUnique({
           where: { id: parseInt(req.params.gigId) },
         });
 
         if (!oldData) return res.status(404).send("Gig not found");
 
-        await prisma.gig.update({
+        await prisma.gigs.update({
           where: { id: parseInt(req.params.gigId) },
           data: {
             title,
@@ -187,7 +187,7 @@ export const editGig = async (req, res, next) => {
 export const searchGigs = async (req, res, next) => {
   try {
     if (req.query.searchTerm || req.query.category) {
-      const gigs = await prisma.gig.findMany(
+      const gigs = await prisma.gigs.findMany(
         createSearchQuery(req.query.searchTerm, req.query.category)
       );
       return res.status(200).json({ gigs });

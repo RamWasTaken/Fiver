@@ -3,7 +3,7 @@ import { prisma } from "../prismaClient.js";
 export const getSellerData = async (req, res, next) => {
   try {
     if (req.userId) {
-      const gigs = await prisma.gig.count({ where: { userId: req.userId } });
+      const gigs = await prisma.gigs.count({ where: { userId: req.userId } });
       const {
         _count: { id: orders },
       } = await prisma.orders.aggregate({

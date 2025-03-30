@@ -9,7 +9,7 @@ export const createOrder = async (req, res, next) => {
   try {
     if (req.body.gigId) {
       const { gigId } = req.body;
-      const gig = await prisma.gig.findUnique({
+      const gig = await prisma.gigs.findUnique({
         where: { id: parseInt(gigId) },
       });
       const paymentIntent = await stripe.paymentIntents.create({
