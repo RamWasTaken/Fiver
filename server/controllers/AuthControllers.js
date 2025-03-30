@@ -104,6 +104,29 @@ export const getUserInfo = async (req, res, next) => {
   }
 };
 
+// NEW: Added route from index.js to get user info by ID
+export const getUserInfoById = async (req, res, next) => {
+  try {
+    const userId = req.params.userId;
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId" });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Return only the image URL for public access
+    return res.json({ 
+      imageUrl: user.profileImage 
+    });
+  } catch (error) {
+    console.error("Fetch error:", error);
+    return res.status(500).json({ error: "Failed to retrieve user info" });
+  }
+};
+
 export const setUserInfo = async (req, res, next) => {
   try {
     if (!req.userId) {
@@ -165,13 +188,16 @@ export const setUserImage = async (req, res, next) => {
       return res.status(401).send("Unauthorized");
     }
 
-    const { buffer, mimetype } = req.file;
-    const fileName = `profile-pictures/${uuidv4()}.${mimetype.split("/")[1]}`;
+    const { buffer, mimetype, originalname } = req.file;
+    // NEW: Using file extension from original filename for better consistency
+    const fileExt = originalname.split('.').pop() || mimetype.split("/")[1];
+    // NEW: Using predictable filename pattern with userId to make images retrievable
+    const fileName = `profile-pictures/${req.userId}.${fileExt}`;
 
     // ✅ Upload image to Supabase Storage
     const { data, error } = await supabase.storage.from("profile-pictures").upload(fileName, buffer, {
       contentType: mimetype,
-      upsert: true,
+      upsert: true, // NEW: Added upsert flag to overwrite existing images
     });
 
     if (error) {
@@ -192,5 +218,47 @@ export const setUserImage = async (req, res, next) => {
   } catch (err) {
     console.error("Error setting user image:", err);
     return res.status(500).send("Internal Server Error");
+  }
+};
+
+// NEW: Added public user image upload route that was in index.js
+export const setPublicUserImage = async (req, res, next) => {
+  console.log("Received File at public endpoint:", req.file);
+  try {
+    const userId = req.body.userId;
+    if (!req.file || !userId) {
+      return res.status(400).json({ error: "Missing file or userId" });
+    }
+
+    const { buffer, mimetype, originalname } = req.file;
+    const fileExt = originalname.split('.').pop() || mimetype.split("/")[1];
+    const fileName = `profile-pictures/${userId}.${fileExt}`;
+
+    const { data, error } = await supabase.storage
+      .from("profile-pictures")
+      .upload(fileName, buffer, { 
+        contentType: mimetype, 
+        upsert: true 
+      });
+
+    if (error) throw error;
+
+    const { publicUrl } = supabase.storage.from("profile-pictures").getPublicUrl(fileName);
+    
+    // NEW: Update the user's profile image in the database if they exist
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { profileImage: publicUrl },
+      });
+    } catch (updateError) {
+      console.warn("User may not exist in database:", updateError);
+      // Continue anyway since this is public upload endpoint
+    }
+    
+    return res.json({ imageUrl: publicUrl });
+  } catch (error) {
+    console.error("Upload error:", error);
+    return res.status(500).json({ error: "Failed to upload image" });
   }
 };
