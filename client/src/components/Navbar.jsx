@@ -82,14 +82,12 @@ function Navbar() {
           }
 
           let projectedUserInfo = { ...response.data.user };
-          if (response.data.user.image) {
-            projectedUserInfo = {
-              ...projectedUserInfo,
-              imageName: HOST + "/" + response.data.user.image,
-            };
+          
+          // Simplify the image handling
+          if (projectedUserInfo.image && !projectedUserInfo.image.startsWith('http')) {
+            projectedUserInfo.image = `${HOST}${projectedUserInfo.image}`;
           }
-          delete projectedUserInfo.image;
-
+          
           dispatch({ type: reducerCases.SET_USER, userInfo: projectedUserInfo });
 
           setIsLoaded(true);
@@ -213,8 +211,19 @@ function Navbar() {
 
               {/* Profile Menu */}
               <li className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setIsContextMenuVisible(true); }}>
-                {userInfo.imageName ? (
-                  <Image src={userInfo.imageName} alt="Profile" width={40} height={40} className="rounded-full" />
+                {userInfo?.image ? (
+                  <Image
+                    src={userInfo.image.startsWith('http') ? userInfo.image : `${HOST}${userInfo.image}`}
+                    alt="Profile"
+                    width={40}
+                    height={40}
+                    className="rounded-full object-cover"
+                    unoptimized // Important for external URLs
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/default-profile.png';
+                    }}
+                  />
                 ) : (
                   <div className="bg-purple-500 h-10 w-10 flex items-center justify-center rounded-full text-white text-xl">
                     {userInfo?.email?.[0]?.toUpperCase()}
