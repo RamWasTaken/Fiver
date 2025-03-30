@@ -55,8 +55,16 @@ const Profile = () => {
       const formData = new FormData();
       formData.append("image", selectedFile);
 
-      // 🔹 Added Console Log for Debugging
-      console.log("Uploading image:", selectedFile.name); 
+      // Debug FormData contents
+      console.log("FormData contents:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ": " + pair[1]);
+      }
+
+      console.log("Uploading image:", selectedFile.name);
+      
+      // Log the actual API endpoint being used
+      console.log("API endpoint:", SET_USER_IMAGE);
 
       const response = await axios.post(SET_USER_IMAGE, formData, {
         headers: {
@@ -65,15 +73,55 @@ const Profile = () => {
         },
       });
 
+      console.log("Response status:", response.status);
       console.log("Full API Response:", response.data);
+      
+      // If response.data exists but img property doesn't, check for alternative properties
+      if (!response.data || !response.data.img) {
+        console.log("Response structure:", Object.keys(response.data));
+        
+        // Check if imageUrl property exists (used in your public route)
+        if (response.data.imageUrl) {
+          console.log("Found imageUrl property instead of img");
+          setImage(response.data.imageUrl);
+          return response.data.imageUrl;
+        }
+        
+        // Check for any URL-like properties
+        const possibleImageKeys = Object.keys(response.data).filter(key =>
+          typeof response.data[key] === 'string' &&
+          (response.data[key].includes('/uploads/') || 
+           response.data[key].includes('image') || 
+           response.data[key].includes('supabase'))
+        );
+        
+        console.log("Possible image keys:", possibleImageKeys);
+
+        if (possibleImageKeys.length > 0) {
+          const key = possibleImageKeys[0];
+          console.log(`Using alternative key: ${key} with value: ${response.data[key]}`);
+          return response.data[key];
+        }
+        
+        throw new Error("Invalid image URL received.");
+      }
+
       console.log("Uploaded Image URL:", response.data.img);
-
-      if (!response.data.img) throw new Error("Invalid image URL received.");
-
       setImage(response.data.img);
       return response.data.img;
     } catch (err) {
       console.error("Image upload failed:", err);
+      
+      // Enhanced error logging
+      if (err.response) {
+        console.error("Response status:", err.response.status);
+        console.error("Response data:", err.response.data);
+      } else if (err.request) {
+        console.error("No response received. Request was sent but no response.");
+      } else {
+        console.error("Error creating request:", err.message);
+      }
+      
       setErrorMessage("Failed to upload image. Try again.");
       return null;
     }
@@ -93,7 +141,7 @@ const Profile = () => {
         fullName: data.fullName || userInfo.fullName,
         userName: data.userName || userInfo.username,
         description: data.description || userInfo.description,
-        image: uploadedImage, // 🔹 Ensure the uploaded image is sent
+        image: uploadedImage,
       };
 
       const response = await axios.post(SET_USER_INFO, payload, {
@@ -109,6 +157,13 @@ const Profile = () => {
       router.push("/");
     } catch (err) {
       console.error("Profile update failed:", err);
+      
+      // Enhanced error logging
+      if (err.response) {
+        console.error("Response status:", err.response.status);
+        console.error("Response data:", err.response.data);
+      }
+      
       setErrorMessage("Failed to update profile. Try again.");
     }
   };
