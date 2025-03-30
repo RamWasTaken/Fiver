@@ -118,8 +118,8 @@ export const getUserInfoById = async (req, res, next) => {
     }
 
     // Return only the image URL for public access
-    return res.json({ 
-      imageUrl: user.profileImage 
+    return res.json({
+      imageUrl: user.profileImage
     });
   } catch (error) {
     console.error("Fetch error:", error);
@@ -176,54 +176,54 @@ export const setUserInfo = async (req, res, next) => {
 };
 
 export const setUserImage = async (req, res, next) => {
-  console.log("Received File at AuthController:", req.file);
   try {
-    console.log("Received file:", req.file);
-    console.log("Received user ID:", req.userId);
-
     if (!req.file) {
-      return res.status(400).send("Image not included.");
+      return res.status(400).json({ error: "Image not included." });
     }
     if (!req.userId) {
-      return res.status(401).send("Unauthorized");
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const { buffer, mimetype, originalname } = req.file;
-    // NEW: Using file extension from original filename for better consistency
     const fileExt = originalname.split('.').pop() || mimetype.split("/")[1];
-    // NEW: Using predictable filename pattern with userId to make images retrievable
     const fileName = `profile-pictures/${req.userId}.${fileExt}`;
 
-    // ✅ Upload image to Supabase Storage
-    const { data, error } = await supabase.storage.from("profile-pictures").upload(fileName, buffer, {
-      contentType: mimetype,
-      upsert: true, // NEW: Added upsert flag to overwrite existing images
-    });
+    // Upload to Supabase
+    const { error } = await supabase.storage
+      .from("profile-pictures")
+      .upload(fileName, buffer, {
+        contentType: mimetype,
+        upsert: true,
+      });
 
     if (error) {
-      console.error("Error uploading to Supabase:", error);
-      return res.status(500).send("Failed to upload image.");
+      console.error("Supabase upload error:", error);
+      return res.status(500).json({ error: "Failed to upload image." });
     }
 
-    // ✅ Get the public URL of the uploaded image
-    const { publicUrl } = supabase.storage.from("profile-pictures").getPublicUrl(fileName);
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from("profile-pictures")
+      .getPublicUrl(fileName);
 
-    // ✅ Save the public URL in the database
+    // Update database
     await prisma.user.update({
       where: { id: req.userId },
       data: { profileImage: publicUrl },
     });
 
-    return res.status(200).json({ img: publicUrl });
+    return res.status(200).json({ 
+      imageUrl: publicUrl,
+      message: "Profile image updated successfully"
+    });
   } catch (err) {
     console.error("Error setting user image:", err);
-    return res.status(500).send("Internal Server Error");
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
 // NEW: Added public user image upload route that was in index.js
 export const setPublicUserImage = async (req, res, next) => {
-  console.log("Received File at public endpoint:", req.file);
   try {
     const userId = req.body.userId;
     if (!req.file || !userId) {
@@ -234,7 +234,7 @@ export const setPublicUserImage = async (req, res, next) => {
     const fileExt = originalname.split('.').pop() || mimetype.split("/")[1];
     const fileName = `profile-pictures/${userId}.${fileExt}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from("profile-pictures")
       .upload(fileName, buffer, { 
         contentType: mimetype, 
@@ -243,20 +243,23 @@ export const setPublicUserImage = async (req, res, next) => {
 
     if (error) throw error;
 
-    const { publicUrl } = supabase.storage.from("profile-pictures").getPublicUrl(fileName);
+    const { data: { publicUrl } } = supabase.storage
+      .from("profile-pictures")
+      .getPublicUrl(fileName);
     
-    // NEW: Update the user's profile image in the database if they exist
     try {
       await prisma.user.update({
         where: { id: userId },
         data: { profileImage: publicUrl },
       });
     } catch (updateError) {
-      console.warn("User may not exist in database:", updateError);
-      // Continue anyway since this is public upload endpoint
+      console.warn("User update warning:", updateError);
     }
     
-    return res.json({ imageUrl: publicUrl });
+    return res.json({ 
+      imageUrl: publicUrl,
+      message: "Image uploaded successfully"
+    });
   } catch (error) {
     console.error("Upload error:", error);
     return res.status(500).json({ error: "Failed to upload image" });
