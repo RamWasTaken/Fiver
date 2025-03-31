@@ -8,34 +8,50 @@ import { useStateProvider } from "../../context/StateContext";
 function Details() {
   const [{ gigData, hasOrdered }] = useStateProvider();
   const [currentImage, setCurrentImage] = useState("");
+  const [averageRatings, setAverageRatings] = useState("0");
 
+  // Get the first image URL when gigData loads
   useEffect(() => {
     if (gigData) {
-      setCurrentImage(gigData.images[0]);
+      setCurrentImage(getMainImageUrl(gigData));
     }
   }, [gigData]);
 
-  const [averageRatings, setAverageRatings] = useState("0");
+  // Calculate average ratings
   useEffect(() => {
-    if (gigData && gigData.reviews.length) {
+    if (gigData && gigData.reviews?.length) {
       let avgRating = 0;
       gigData.reviews.forEach(({ rating }) => (avgRating += rating));
       setAverageRatings((avgRating / gigData.reviews.length).toFixed(1));
     }
   }, [gigData]);
 
+  // Helper function to get main image URL
+  const getMainImageUrl = (gig) => {
+    if (!gig?.images?.length) return '/default-gig-image.jpg';
+    return gig.images[0]; // Use the first image URL directly
+  };
+
+  // Helper function to get profile image URL
+  const getProfileImageUrl = (user) => {
+    if (!user?.profileImage) return null;
+    return user.profileImage; // Use the profile image URL directly
+  };
+
   return (
     <>
-      {gigData && currentImage !== "" && (
+      {gigData && currentImage && (
         <div className="col-span-2 flex flex-col gap-3">
           <h2 className="text-2xl font-bold text-[#404145] mb-1">
             {gigData.title}
           </h2>
+          
+          {/* User info with profile image */}
           <div className="flex items-center gap-2">
             <div>
-              {gigData.createdBy.profileImage ? (
+              {getProfileImageUrl(gigData.createdBy) ? (
                 <Image
-                  src={`https://nvzstnsvqpnjlbutomny.supabase.co/storage/v1/object/public/profile-pictures/${gigData.createdBy.profileImage}`}
+                  src={getProfileImageUrl(gigData.createdBy)}
                   alt="profile"
                   height={30}
                   width={30}
@@ -60,10 +76,11 @@ function Details() {
                 {[1, 2, 3, 4, 5].map((star) => (
                   <FaStar
                     key={star}
-                    className={`cursor-pointer ${Math.ceil(averageRatings) >= star
+                    className={`cursor-pointer ${
+                      Math.ceil(averageRatings) >= star
                         ? "text-yellow-400"
                         : "text-gray-300"
-                      }`}
+                    }`}
                   />
                 ))}
               </div>
@@ -71,32 +88,41 @@ function Details() {
               <span className="text-[#27272a]">({gigData.reviews.length})</span>
             </div>
           </div>
+
+          {/* Main gig image gallery */}
           <div className="flex flex-col gap-4">
             <div className="max-h-[1000px] max-w-[1000px] overflow-hidden">
               <Image
-                src={`https://nvzstnsvqpnjlbutomny.supabase.co/storage/v1/object/public/gig-images/${currentImage}`}
+                src={currentImage}
                 alt="Gig"
                 height={1000}
                 width={1000}
                 className="hover:scale-110 transition-all duration-500"
+                priority
               />
             </div>
-            <div className="flex gap-4 flex-wrap">
-              {gigData.images.length > 1 &&
-                gigData.images.map((image) => (
+            
+            {/* Thumbnail images */}
+            {gigData.images.length > 1 && (
+              <div className="flex gap-4 flex-wrap">
+                {gigData.images.map((image) => (
                   <Image
-                    src={`https://nvzstnsvqpnjlbutomny.supabase.co/storage/v1/object/public/gig-images/${image}`}
+                    src={image}
                     alt="gig"
                     height={100}
                     width={100}
                     key={image}
                     onClick={() => setCurrentImage(image)}
-                    className={`${currentImage === image ? "" : "blur-sm"
-                      } cursor-pointer transition-all duration-500`}
+                    className={`${
+                      currentImage === image ? "" : "blur-sm"
+                    } cursor-pointer transition-all duration-500`}
                   />
                 ))}
-            </div>
+              </div>
+            )}
           </div>
+
+          {/* Gig description */}
           <div>
             <h3 className="text-3xl my-5 font-medium text-[#404145]">
               About this gig
@@ -105,16 +131,17 @@ function Details() {
               <p>{gigData.description}</p>
             </div>
           </div>
-          {/* About the seller */}
+
+          {/* Seller information */}
           <div className="">
             <h3 className="text-3xl my-5 font-medium text-[#404145]">
               About the Seller
             </h3>
             <div className="flex gap-4">
               <div>
-                {gigData.createdBy.profileImage ? (
+                {getProfileImageUrl(gigData.createdBy) ? (
                   <Image
-                    src={`https://nvzstnsvqpnjlbutomny.supabase.co/storage/v1/object/public/profile-pictures/${gigData.createdBy.profileImage}`}
+                    src={getProfileImageUrl(gigData.createdBy)}
                     alt="profile"
                     height={120}
                     width={120}
@@ -129,7 +156,7 @@ function Details() {
                 )}
               </div>
               <div className="flex flex-col gap-1">
-                <div className="flex  gap-2 items-center">
+                <div className="flex gap-2 items-center">
                   <h4 className="font-medium text-lg">
                     {gigData.createdBy.fullName}
                   </h4>
@@ -145,10 +172,11 @@ function Details() {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <FaStar
                         key={star}
-                        className={`cursor-pointer ${Math.ceil(gigData.averageRating) >= star
+                        className={`cursor-pointer ${
+                          Math.ceil(gigData.averageRating) >= star
                             ? "text-yellow-400"
                             : "text-gray-300"
-                          }`}
+                        }`}
                       />
                     ))}
                   </div>
@@ -162,6 +190,7 @@ function Details() {
               </div>
             </div>
           </div>
+
           <Reviews />
           {hasOrdered && <AddReview />}
         </div>
