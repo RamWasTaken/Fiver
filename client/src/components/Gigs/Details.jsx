@@ -2,304 +2,200 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import AddReview from "../../components/Gigs/AddReview";
 import Reviews from "../../components/Gigs/Reviews";
-import { FaStar, FaRegStar, FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { FiUser } from "react-icons/fi";
+import { FaStar } from "react-icons/fa";
 import { useStateProvider } from "../../context/StateContext";
-import { useRouter } from "next/router";
 
 function Details() {
   const [{ gigData, hasOrdered }] = useStateProvider();
-  const router = useRouter();
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImage, setCurrentImage] = useState("");
   const [averageRatings, setAverageRatings] = useState("0");
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Image navigation functions
-  const nextImage = () => {
-    setCurrentImageIndex(prev => 
-      prev === gigData.images.length - 1 ? 0 : prev + 1
-    );
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex(prev => 
-      prev === 0 ? gigData.images.length - 1 : prev - 1
-    );
-  };
+  // Get the first image URL when gigData loads
+  useEffect(() => {
+    if (gigData) {
+      setCurrentImage(getMainImageUrl(gigData));
+    }
+  }, [gigData]);
 
   // Calculate average ratings
   useEffect(() => {
-    if (gigData?.reviews?.length) {
-      const avgRating = gigData.reviews.reduce(
-        (sum, { rating }) => sum + rating, 0
-      ) / gigData.reviews.length;
-      setAverageRatings(avgRating.toFixed(1));
+    if (gigData && gigData.reviews?.length) {
+      let avgRating = 0;
+      gigData.reviews.forEach(({ rating }) => (avgRating += rating));
+      setAverageRatings((avgRating / gigData.reviews.length).toFixed(1));
     }
   }, [gigData]);
 
-  // Loading state for images
-  useEffect(() => {
-    if (gigData?.images?.length) {
-      setIsLoading(false);
-    }
-  }, [gigData]);
+  // Helper function to get main image URL
+  const getMainImageUrl = (gig) => {
+    if (!gig?.images?.length) return '/default-gig-image.jpg';
+    return gig.images[0]; // Use the first image URL directly
+  };
 
-  if (!gigData) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <p className="text-lg text-gray-500">Loading gig details...</p>
-      </div>
-    );
-  }
+  // Helper function to get profile image URL
+  const getProfileImageUrl = (user) => {
+    if (!user?.profileImage) return null;
+    return user.profileImage; // Use the profile image URL directly
+  };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Back button */}
-      <button 
-        onClick={() => router.back()}
-        className="flex items-center text-[#404145] hover:text-[#27272a] mb-6 transition-colors"
-      >
-        <FaChevronLeft className="mr-2" />
-        Back to results
-      </button>
-
-      {/* Gig Header */}
-      <div className="flex flex-col md:flex-row justify-between gap-6 mb-8">
-        <div className="flex-1">
-          <h1 className="text-3xl md:text-4xl font-bold text-[#404145] mb-4">
+    <>
+      {gigData && currentImage && (
+        <div className="col-span-2 flex flex-col gap-3">
+          <h2 className="text-2xl font-bold text-[#404145] mb-1">
             {gigData.title}
-          </h1>
+          </h2>
           
-          {/* Seller Info */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative h-12 w-12">
-              {gigData.createdBy.profileImage ? (
+          {/* User info with profile image */}
+          <div className="flex items-center gap-2">
+            <div>
+              {getProfileImageUrl(gigData.createdBy) ? (
                 <Image
-                  src={gigData.createdBy.profileImage}
-                  alt={gigData.createdBy.username}
-                  fill
-                  className="rounded-full object-cover"
-                  onLoadingComplete={() => setIsLoading(false)}
+                  src={getProfileImageUrl(gigData.createdBy)}
+                  alt="profile"
+                  height={30}
+                  width={30}
+                  className="rounded-full"
                 />
               ) : (
-                <div className="bg-purple-500 h-full w-full flex items-center justify-center rounded-full">
-                  <FiUser className="text-white text-xl" />
+                <div className="bg-purple-500 h-10 w-10 flex items-center justify-center rounded-full relative">
+                  <span className="text-xl text-white">
+                    {gigData.createdBy.email[0].toUpperCase()}
+                  </span>
                 </div>
               )}
             </div>
-            <div>
-              <h3 className="font-medium text-lg">
+            <div className="flex gap-2 items-center">
+              <h4 className="text-[#27272a] font-bold">
                 {gigData.createdBy.fullName}
-              </h3>
-              <div className="flex items-center gap-2">
-                <div className="flex items-center">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    star <= Math.floor(averageRatings) ? (
-                      <FaStar key={star} className="text-yellow-400" />
-                    ) : (
-                      <FaRegStar key={star} className="text-yellow-400" />
-                    )
-                  ))}
-                </div>
-                <span className="text-[#74767e]">
-                  ({gigData.reviews.length} reviews)
-                </span>
+              </h4>
+              <h6 className="text-[#74767e]">@{gigData.createdBy.username}</h6>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="flex">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <FaStar
+                    key={star}
+                    className={`cursor-pointer ${
+                      Math.ceil(averageRatings) >= star
+                        ? "text-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                  />
+                ))}
               </div>
+              <span className="text-yellow-500">{averageRatings}</span>
+              <span className="text-[#27272a]">({gigData.reviews.length})</span>
             </div>
           </div>
-        </div>
 
-        {/* Price Box */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6 h-fit shadow-sm">
-          <h3 className="text-xl font-semibold mb-4">Pricing</h3>
-          <p className="text-2xl font-bold text-[#404145] mb-2">
-            ${gigData.price}
-          </p>
-          <p className="text-gray-600 mb-4">{gigData.shortDesc}</p>
-          <button className="w-full bg-[#1DBF73] hover:bg-[#19a463] text-white py-3 px-6 rounded-md font-medium transition-colors">
-            Continue (${gigData.price})
-          </button>
-        </div>
-      </div>
-
-      {/* Image Gallery */}
-      <div className="relative mb-12">
-        {isLoading ? (
-          <div className="aspect-video bg-gray-100 rounded-lg animate-pulse"></div>
-        ) : (
-          <>
-            <div className="relative aspect-video overflow-hidden rounded-lg">
+          {/* Main gig image gallery */}
+          <div className="flex flex-col gap-4">
+            <div className="max-h-[1000px] max-w-[1000px] overflow-hidden">
               <Image
-                src={gigData.images[currentImageIndex]}
-                alt={`${gigData.title} - Image ${currentImageIndex + 1}`}
-                fill
-                className="object-cover"
+                src={currentImage}
+                alt="Gig"
+                height={1000}
+                width={1000}
+                className="hover:scale-110 transition-all duration-500"
                 priority
               />
-              
-              {/* Navigation Arrows */}
-              {gigData.images.length > 1 && (
-                <>
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-md transition-all"
-                    aria-label="Previous image"
-                  >
-                    <FaChevronLeft className="text-gray-700" />
-                  </button>
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-md transition-all"
-                    aria-label="Next image"
-                  >
-                    <FaChevronRight className="text-gray-700" />
-                  </button>
-                </>
-              )}
             </div>
-
-            {/* Thumbnails */}
+            
+            {/* Thumbnail images */}
             {gigData.images.length > 1 && (
-              <div className="flex gap-3 mt-4 overflow-x-auto py-2">
-                {gigData.images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`flex-shrink-0 relative h-20 w-32 rounded-md overflow-hidden border-2 transition-all ${
-                      currentImageIndex === index
-                        ? "border-[#1DBF73]"
-                        : "border-transparent"
-                    }`}
-                  >
-                    <Image
-                      src={image}
-                      alt={`Thumbnail ${index + 1}`}
-                      fill
-                      className="object-cover"
-                    />
-                  </button>
+              <div className="flex gap-4 flex-wrap">
+                {gigData.images.map((image) => (
+                  <Image
+                    src={image}
+                    alt="gig"
+                    height={100}
+                    width={100}
+                    key={image}
+                    onClick={() => setCurrentImage(image)}
+                    className={`${
+                      currentImage === image ? "" : "blur-sm"
+                    } cursor-pointer transition-all duration-500`}
+                  />
                 ))}
               </div>
             )}
-          </>
-        )}
-      </div>
+          </div>
 
-      {/* Gig Details Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-        <div className="lg:col-span-2">
-          {/* About This Gig */}
-          <section className="mb-12">
-            <h2 className="text-2xl font-bold text-[#404145] mb-6">
-              About This Gig
-            </h2>
-            <div className="prose max-w-none">
-              <p className="whitespace-pre-line">{gigData.description}</p>
+          {/* Gig description */}
+          <div>
+            <h3 className="text-3xl my-5 font-medium text-[#404145]">
+              About this gig
+            </h3>
+            <div>
+              <p>{gigData.description}</p>
             </div>
-          </section>
+          </div>
 
-          {/* Features */}
-          {gigData.features?.length > 0 && (
-            <section className="mb-12">
-              <h2 className="text-2xl font-bold text-[#404145] mb-6">
-                What's Included
-              </h2>
-              <ul className="space-y-3">
-                {gigData.features.map((feature, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="text-[#1DBF73] mr-2">✓</span>
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          {/* About The Seller */}
-          <section className="bg-gray-50 p-6 rounded-lg">
-            <h2 className="text-2xl font-bold text-[#404145] mb-6">
-              About The Seller
-            </h2>
-            <div className="flex flex-col sm:flex-row gap-6">
-              <div className="flex-shrink-0">
-                <div className="relative h-24 w-24">
-                  {gigData.createdBy.profileImage ? (
-                    <Image
-                      src={gigData.createdBy.profileImage}
-                      alt={gigData.createdBy.username}
-                      fill
-                      className="rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="bg-purple-500 h-full w-full flex items-center justify-center rounded-full">
-                      <FiUser className="text-white text-2xl" />
-                    </div>
-                  )}
-                </div>
-              </div>
+          {/* Seller information */}
+          <div className="">
+            <h3 className="text-3xl my-5 font-medium text-[#404145]">
+              About the Seller
+            </h3>
+            <div className="flex gap-4">
               <div>
-                <h3 className="text-xl font-semibold mb-2">
-                  {gigData.createdBy.fullName}
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  {gigData.createdBy.description || "No description provided"}
-                </p>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center">
-                    <FaStar className="text-yellow-400 mr-1" />
-                    <span className="font-medium">
-                      {averageRatings} ({gigData.reviews.length} reviews)
+                {getProfileImageUrl(gigData.createdBy) ? (
+                  <Image
+                    src={getProfileImageUrl(gigData.createdBy)}
+                    alt="profile"
+                    height={120}
+                    width={120}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <div className="bg-purple-500 h-10 w-10 flex items-center justify-center rounded-full relative">
+                    <span className="text-xl text-white">
+                      {gigData.createdBy.email[0].toUpperCase()}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-gray-600">
-                      {gigData.createdBy.gigs?.length || 0} gigs
-                    </span>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex gap-2 items-center">
+                  <h4 className="font-medium text-lg">
+                    {gigData.createdBy.fullName}
+                  </h4>
+                  <span className="text-[#74767e]">
+                    @{gigData.createdBy.username}
+                  </span>
+                </div>
+                <div>
+                  <p>{gigData.createdBy.description}</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="flex text-yellow-500">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <FaStar
+                        key={star}
+                        className={`cursor-pointer ${
+                          Math.ceil(gigData.averageRating) >= star
+                            ? "text-yellow-400"
+                            : "text-gray-300"
+                        }`}
+                      />
+                    ))}
                   </div>
+                  <span className="text-yellow-500">
+                    {gigData.averageRating}
+                  </span>
+                  <span className="text-[#74767e]">
+                    ({gigData.totalReviews})
+                  </span>
                 </div>
               </div>
             </div>
-          </section>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Delivery Info */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <h3 className="text-xl font-semibold mb-4">Delivery Details</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Delivery Time</span>
-                <span className="font-medium">{gigData.deliveryTime} days</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Revisions</span>
-                <span className="font-medium">{gigData.revisions}</span>
-              </div>
-            </div>
           </div>
 
-          {/* Category */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <h3 className="text-xl font-semibold mb-4">Category</h3>
-            <span className="inline-block bg-gray-100 rounded-full px-3 py-1 text-sm font-medium text-gray-800">
-              {gigData.category}
-            </span>
-          </div>
+          <Reviews />
+          {hasOrdered && <AddReview />}
         </div>
-      </div>
-
-      {/* Reviews Section */}
-      <section className="mb-12">
-        <h2 className="text-2xl font-bold text-[#404145] mb-6">
-          Reviews ({gigData.reviews.length})
-        </h2>
-        <Reviews />
-      </section>
-
-      {/* Add Review (if purchased) */}
-      {hasOrdered && <AddReview />}
-    </div>
+      )}
+    </>
   );
 }
 
