@@ -3,6 +3,8 @@ import { useRouter } from "next/router";
 import React from "react";
 import { FaStar } from "react-icons/fa";
 
+// Working code DO NOT CHANGE.
+
 function SearchGridItem({ gig }) {
   const router = useRouter();
   
