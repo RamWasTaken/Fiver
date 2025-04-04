@@ -29,6 +29,7 @@ function EditGig() {
     feature: "",
     price: 0,
     shortDesc: "",
+    id: "", // Added missing id
   });
 
   // Fetch gig data on mount
@@ -53,21 +54,23 @@ function EditGig() {
           feature: "",
           price: gig.price,
           shortDesc: gig.shortDesc,
-          id: gig.id
+          id: gig.id,
         });
         
         setFeatures(gig.features || []);
 
-        // Load existing images
+        // Load existing images (with error handling)
         const imageFiles = await Promise.all(
-          gig.images.map(async (image) => {
+          (gig.images || []).map(async (image) => {
             try {
               const url = `${process.env.NEXT_PUBLIC_SERVER_URL}/uploads/${image}`;
               const response = await fetch(url);
+              if (!response.ok) throw new Error("Failed to fetch image");
               const blob = await response.blob();
               return new File([blob], image, { type: blob.type });
             } catch (error) {
               console.error("Error loading image:", image, error);
+              toast.warn(`Could not load image: ${image}`);
               return null;
             }
           })
@@ -104,7 +107,7 @@ function EditGig() {
   };
 
   const editGig = async () => {
-    const { category, description, price, revisions, time, title, shortDesc } = data;
+    const { category, description, price, revisions, time, title, shortDesc, id } = data;
 
     // Validation
     if (!title || !description || !category || features.length === 0 || 
@@ -113,10 +116,14 @@ function EditGig() {
       return;
     }
 
+    setIsLoading(true); // Set loading state
     try {
       const formData = new FormData();
+      
+      // Add files
       files.forEach(file => formData.append("images", file));
       
+      // Add JSON data
       formData.append("data", JSON.stringify({
         title,
         description,
@@ -125,11 +132,11 @@ function EditGig() {
         price: Number(price),
         revisions: Number(revisions),
         time: Number(time),
-        shortDesc
+        shortDesc,
       }));
 
       const response = await axios.put(
-        `${EDIT_GIG_DATA}/${data.id}`,
+        `${EDIT_GIG_DATA}/${id}`,
         formData,
         {
           headers: {
@@ -139,13 +146,25 @@ function EditGig() {
         }
       );
 
-      if (response.status === 200 || response.status === 201) {
+      if (response.status === 200) {
         toast.success("Gig updated successfully!");
         router.push("/seller/gigs");
+      } else {
+        throw new Error(`Unexpected response status: ${response.status}`);
       }
     } catch (error) {
       console.error("Error updating gig:", error);
-      toast.error(error.response?.data?.message || "Failed to update gig");
+      let errorMessage = "Failed to update gig";
+      
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || errorMessage;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false); // Reset loading state
     }
   };
 
@@ -164,7 +183,10 @@ function EditGig() {
         Update your gig details
       </h3>
       
-      <form className="flex flex-col gap-5 mt-10">
+      <form 
+        className="flex flex-col gap-5 mt-10" 
+        onSubmit={(e) => { e.preventDefault(); editGig(); }}
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-11">
           {/* Title */}
           <div>
@@ -252,7 +274,7 @@ function EditGig() {
               className={inputClassName}
               placeholder="Max Number of Revisions"
               name="revisions"
-              min="0"
+              min="1"
               value={data.revisions}
               onChange={handleChange}
               required
@@ -356,7 +378,7 @@ function EditGig() {
                 id="price"
                 placeholder="0.00"
                 name="price"
-                min="5"
+                min="0.01"
                 step="0.01"
                 value={data.price}
                 onChange={handleChange}
@@ -366,11 +388,17 @@ function EditGig() {
           </div>
         </div>
 
-        <div className="flex justify-end mt-6">
+        <div className="flex justify-end mt-6 gap-4">
           <button
             type="button"
+            className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 text-lg font-semibold rounded-md transition-colors"
+            onClick={() => router.push("/seller/gigs")}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
             className="px-8 py-3 bg-[#1DBF73] hover:bg-[#18a966] text-white text-lg font-semibold rounded-md transition-colors"
-            onClick={editGig}
             disabled={isLoading}
           >
             {isLoading ? "Saving..." : "Save Changes"}
