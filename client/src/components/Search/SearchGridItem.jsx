@@ -90,7 +90,7 @@ function SearchGridItem({ gig }) {
       
       {/* Price */}
       <div>
-        <strong className="font-medium">From ${gig.price}</strong>
+        <strong className="font-medium">{gig.price} ♡ </strong>
       </div>
     </div>
   );

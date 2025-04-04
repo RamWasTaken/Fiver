@@ -250,7 +250,7 @@ const addGig = async () => {
           </div>
           <div>
             <label htmlFor="price" className={labelClassName}>
-              Gig Price ( $ )
+              Support ( ♡ )
             </label>
             <input
               type="number"

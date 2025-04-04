@@ -368,7 +368,7 @@ function EditGig() {
           {/* Price */}
           <div>
             <label htmlFor="price" className={labelClassName}>
-              Gig Price ($)
+              Gig Price (♡)
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2">$</span>
