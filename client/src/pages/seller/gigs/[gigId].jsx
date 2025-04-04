@@ -11,11 +11,11 @@ function EditGig() {
   const [cookies] = useCookies(['jwt']);
   const router = useRouter();
   const { gigId } = router.query;
-  
+
   // Constants
   const inputClassName = "block p-4 w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500";
   const labelClassName = "mb-2 text-lg font-medium text-gray-900";
-  
+
   // State
   const [files, setFile] = useState([]);
   const [features, setFeatures] = useState([]);
@@ -36,7 +36,7 @@ function EditGig() {
   useEffect(() => {
     const fetchGigData = async () => {
       if (!gigId) return;
-      
+
       try {
         setIsLoading(true);
         const { data: { gig } } = await axios.get(`${GET_GIG_DATA}/${gigId}`, {
@@ -56,7 +56,7 @@ function EditGig() {
           shortDesc: gig.shortDesc,
           id: gig.id,
         });
-        
+
         setFeatures(gig.features || []);
 
         // Load existing images (with error handling)
@@ -110,8 +110,8 @@ function EditGig() {
     const { category, description, price, revisions, time, title, shortDesc, id } = data;
 
     // Validation
-    if (!title || !description || !category || features.length === 0 || 
-        files.length === 0 || price <= 0 || !shortDesc || revisions <= 0 || time <= 0) {
+    if (!title || !description || !category || features.length === 0 ||
+      files.length === 0 || price <= 0 || !shortDesc || revisions <= 0 || time <= 0) {
       toast.error("Please fill all required fields");
       return;
     }
@@ -119,10 +119,10 @@ function EditGig() {
     setIsLoading(true); // Set loading state
     try {
       const formData = new FormData();
-      
+
       // Add files
       files.forEach(file => formData.append("images", file));
-      
+
       // Add JSON data
       formData.append("data", JSON.stringify({
         title,
@@ -155,13 +155,13 @@ function EditGig() {
     } catch (error) {
       console.error("Error updating gig:", error);
       let errorMessage = "Failed to update gig";
-      
+
       if (axios.isAxiosError(error)) {
         errorMessage = error.response?.data?.message || errorMessage;
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setIsLoading(false); // Reset loading state
@@ -182,9 +182,9 @@ function EditGig() {
       <h3 className="text-xl md:text-3xl text-gray-900 mb-5">
         Update your gig details
       </h3>
-      
-      <form 
-        className="flex flex-col gap-5 mt-10" 
+
+      <form
+        className="flex flex-col gap-5 mt-10"
         onSubmit={(e) => { e.preventDefault(); editGig(); }}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-11">
@@ -204,7 +204,7 @@ function EditGig() {
               required
             />
           </div>
-          
+
           {/* Category */}
           <div>
             <label htmlFor="categories" className={labelClassName}>
@@ -262,7 +262,7 @@ function EditGig() {
               required
             />
           </div>
-          
+
           {/* Revisions */}
           <div>
             <label htmlFor="revision" className={labelClassName}>
@@ -307,7 +307,7 @@ function EditGig() {
                 Add
               </button>
             </div>
-            
+
             {features.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {features.map((feature, index) => (
@@ -329,19 +329,44 @@ function EditGig() {
               </div>
             )}
           </div>
-          
+
           {/* Images */}
           <div>
             <label htmlFor="image" className={labelClassName}>
               Gig Images
             </label>
+
+            {/* Display existing images */}
+            {gig.images?.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-sm font-medium mb-2">Existing Images</h4>
+                <div className="flex flex-wrap gap-2">
+                  {gig.images.map((imageUrl, index) => (
+                    <div key={index} className="relative w-24 h-24">
+                      <Image
+                        src={imageUrl}
+                        alt={`Existing gig image ${index + 1}`}
+                        fill
+                        className="rounded-md object-cover"
+                        sizes="100px"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Image uploader for new images */}
             <div>
-              <ImageUpload 
-                files={files} 
-                setFile={setFile} 
-                maxFiles={5}
+              <ImageUpload
+                files={files}
+                setFile={setFile}
+                maxFiles={5 - (gig.images?.length || 0)} // Adjust maxFiles based on existing images
                 maxSizeMB={5}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                You can upload up to {5 - (gig.images?.length || 0)} more images (max 5 total)
+              </p>
             </div>
           </div>
         </div>
@@ -364,7 +389,7 @@ function EditGig() {
               required
             />
           </div>
-          
+
           {/* Price */}
           <div>
             <label htmlFor="price" className={labelClassName}>
