@@ -161,66 +161,104 @@ export const getGigData = async (req, res, next) => {
 
 export const editGig = async (req, res, next) => {
   try {
-    if (req.files) {
-      const fileKeys = Object.keys(req.files);
-      const fileNames = [];
+    // Parse the JSON data from form-data (CHANGED: same as addGig)
+    const gigData = JSON.parse(req.body.data);
+    
+    const { 
+      title,
+      description,
+      category,
+      features,
+      price,
+      revisions,
+      time,
+      shortDesc
+    } = gigData;
 
-      if (!existsSync("uploads")) mkdirSync("uploads");
+    // Validate required fields (NEW: validation like addGig)
+    if (!title || !description || !category || !features?.length || 
+        !price || !revisions || !time || !shortDesc) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
 
-      fileKeys.forEach((file) => {
-        const date = Date.now();
-        renameSync(
-          req.files[file].path,
-          "uploads/" + date + req.files[file].originalname
-        );
-        fileNames.push(date + req.files[file].originalname);
+    // Get old gig data (NEW: needed for image cleanup)
+    const oldGig = await prisma.gigs.findUnique({
+      where: { id: parseInt(req.params.gigId) },
+    });
+
+    if (!oldGig) return res.status(404).send("Gig not found");
+
+    let imageUrls = oldGig.images; // Keep existing images by default
+
+    // 1. Handle file uploads to Supabase (CHANGED: like addGig)
+    if (req.files && req.files.length > 0) {
+      // Upload new files to Supabase
+      const uploadPromises = req.files.map(async (file) => {
+        const fileExt = file.originalname.split('.').pop();
+        const fileName = `gigs/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        
+        const { error } = await supabase.storage
+          .from('gig-images')
+          .upload(fileName, file.buffer, {
+            contentType: file.mimetype,
+            upsert: false
+          });
+
+        if (error) throw new Error(`Supabase upload error: ${error.message}`);
+        
+        return supabase.storage
+          .from('gig-images')
+          .getPublicUrl(fileName).data.publicUrl;
       });
 
-      if (req.query) {
-        const {
-          title,
-          description,
-          category,
-          features,
-          price,
-          revisions,
-          time,
-          shortDesc,
-        } = req.query;
+      imageUrls = await Promise.all(uploadPromises);
 
-        const oldData = await prisma.gigs.findUnique({
-          where: { id: parseInt(req.params.gigId) },
-        });
-
-        if (!oldData) return res.status(404).send("Gig not found");
-
-        await prisma.gigs.update({
-          where: { id: parseInt(req.params.gigId) },
-          data: {
-            title,
-            description,
-            deliveryTime: parseInt(time),
-            category,
-            features: JSON.parse(features),
-            price: parseInt(price),
-            shortDesc,
-            revisions: parseInt(revisions),
-            createdBy: { connect: { id: parseInt(req.userId) } },
-            images: fileNames,
-          },
-        });
-
-        oldData?.images.forEach((image) => {
-          if (existsSync(`uploads/${image}`)) unlinkSync(`uploads/${image}`);
-        });
-
-        return res.status(201).send("Successfully edited the gig.");
+      // Delete old images from Supabase (NEW: cleanup)
+      if (oldGig.images?.length) {
+        await Promise.all(oldGig.images.map(url => {
+          const fileName = url.split('/').pop();
+          return supabase.storage
+            .from('gig-images')
+            .remove([`gigs/${fileName}`]);
+        }));
       }
     }
-    return res.status(400).send("All properties are required.");
+
+    // 2. Update gig in database (CHANGED: using proper data format)
+    const updatedGig = await prisma.gigs.update({
+      where: { id: parseInt(req.params.gigId) },
+      data: {
+        title,
+        description,
+        deliveryTime: parseInt(time),
+        category,
+        features: features, // CHANGED: no need for JSON.parse
+        price: parseInt(price),
+        shortDesc,
+        revisions: parseInt(revisions),
+        images: imageUrls
+      },
+    });
+
+    return res.status(200).json(updatedGig);
+
   } catch (err) {
-    console.log(err);
-    return res.status(500).send("Internal Server Error");
+    console.error("Error updating gig:", err);
+    
+    // Clean up any uploaded files if error occurred (NEW: like addGig)
+    if (imageUrls?.length && req.files?.length) {
+      await Promise.all(imageUrls.map(url => {
+        const fileName = url.split('/').pop();
+        return supabase.storage
+          .from('gig-images')
+          .remove([`gigs/${fileName}`]);
+      }));
+    }
+
+    return res.status(500).json({ 
+      error: "Failed to update gig",
+      message: err.message 
+    });
   }
 };
 
