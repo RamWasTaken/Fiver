@@ -1,11 +1,11 @@
+import axios from "axios";
+import React, { useState } from "react";
+import { useRouter } from "next/router";
+import { useCookies } from "react-cookie";
+import { FaStar } from "react-icons/fa";
 import { useStateProvider } from "../../context/StateContext";
 import { reducerCases } from "../../context/constants";
 import { ADD_REVIEW } from "../../utils/constants";
-import axios from "axios";
-import { useRouter } from "next/router";
-import React, { useState } from "react";
-import { FaStar } from "react-icons/fa";
-import { useCookies } from "react-cookie";
 
 function AddReview() {
   const [{}, dispatch] = useStateProvider();
@@ -38,7 +38,7 @@ function AddReview() {
   return (
     <div className="mb-10">
       <h3 className="text-2xl my-5 font-normal   text-[#404145]">
-        Give Kishan Sheth a Review
+        Give User a Review
       </h3>
 
       <div className="flex  flex-col  items-start justify-start gap-3">
