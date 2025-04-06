@@ -13,8 +13,8 @@ export const addGig = async (req, res) => {
   try {
     // Parse the JSON data from form-data
     const gigData = JSON.parse(req.body.data);
-    
-    const { 
+
+    const {
       title,
       description,
       category,
@@ -26,8 +26,8 @@ export const addGig = async (req, res) => {
     } = gigData;
 
     // Validate required fields
-    if (!title || !description || !category || !features?.length || 
-        !price || !revisions || !time || !shortDesc) {
+    if (!title || !description || !category || !features?.length ||
+      !price || !revisions || !time || !shortDesc) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -37,7 +37,7 @@ export const addGig = async (req, res) => {
       const uploadPromises = req.files.map(async (file) => {
         const fileExt = file.originalname.split('.').pop();
         const fileName = `gigs/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        
+
         const { error } = await supabase.storage
           .from('gig-images')
           .upload(fileName, file.buffer, {
@@ -46,7 +46,7 @@ export const addGig = async (req, res) => {
           });
 
         if (error) throw new Error(`Supabase upload error: ${error.message}`);
-        
+
         return supabase.storage
           .from('gig-images')
           .getPublicUrl(fileName).data.publicUrl;
@@ -77,7 +77,7 @@ export const addGig = async (req, res) => {
 
   } catch (err) {
     console.error("Error creating gig:", err);
-    
+
     // Clean up any uploaded files if error occurred
     if (imageUrls?.length) {
       await Promise.all(imageUrls.map(url => {
@@ -88,9 +88,9 @@ export const addGig = async (req, res) => {
       }));
     }
 
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: "Failed to create gig",
-      message: err.message 
+      message: err.message
     });
   }
 };
@@ -141,13 +141,13 @@ export const getGigData = async (req, res, next) => {
       const averageRating =
         totalReviews > 0
           ? (
-              userWithGigs.gigs.reduce(
-                (acc, gig) =>
-                  acc +
-                  gig.reviews.reduce((sum, review) => sum + review.rating, 0),
-                0
-              ) / totalReviews
-            ).toFixed(1)
+            userWithGigs.gigs.reduce(
+              (acc, gig) =>
+                acc +
+                gig.reviews.reduce((sum, review) => sum + review.rating, 0),
+              0
+            ) / totalReviews
+          ).toFixed(1)
           : "0.0";
 
       return res.status(200).json({ gig: { ...gig, totalReviews, averageRating } });
@@ -163,8 +163,8 @@ export const editGig = async (req, res, next) => {
   try {
     // Parse the JSON data from form-data (CHANGED: same as addGig)
     const gigData = JSON.parse(req.body.data);
-    
-    const { 
+
+    const {
       title,
       description,
       category,
@@ -176,8 +176,8 @@ export const editGig = async (req, res, next) => {
     } = gigData;
 
     // Validate required fields (NEW: validation like addGig)
-    if (!title || !description || !category || !features?.length || 
-        !price || !revisions || !time || !shortDesc) {
+    if (!title || !description || !category || !features?.length ||
+      !price || !revisions || !time || !shortDesc) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -196,7 +196,7 @@ export const editGig = async (req, res, next) => {
       const uploadPromises = req.files.map(async (file) => {
         const fileExt = file.originalname.split('.').pop();
         const fileName = `gigs/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        
+
         const { error } = await supabase.storage
           .from('gig-images')
           .upload(fileName, file.buffer, {
@@ -205,7 +205,7 @@ export const editGig = async (req, res, next) => {
           });
 
         if (error) throw new Error(`Supabase upload error: ${error.message}`);
-        
+
         return supabase.storage
           .from('gig-images')
           .getPublicUrl(fileName).data.publicUrl;
@@ -244,7 +244,7 @@ export const editGig = async (req, res, next) => {
 
   } catch (err) {
     console.error("Error updating gig:", err);
-    
+
     // Clean up any uploaded files if error occurred (NEW: like addGig)
     if (imageUrls?.length && req.files?.length) {
       await Promise.all(imageUrls.map(url => {
@@ -255,9 +255,9 @@ export const editGig = async (req, res, next) => {
       }));
     }
 
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: "Failed to update gig",
-      message: err.message 
+      message: err.message
     });
   }
 };
@@ -324,14 +324,15 @@ export const addReview = async (req, res, next) => {
     console.log("➡ gigId:", req.params.gigId);
     console.log("➡ reviewText:", req.body.reviewText);
     console.log("➡ rating:", req.body.rating);
-    
+
     // removed purchase requirment to addReview.
     if (req.userId && req.params.gigId) {
       // if (await checkOrder(req.userId, req.params.gigId)) {
-        if (req.body.reviewText && req.body.rating) {
+      if (req.body.reviewText && req.body.rating) {
+        try {
           const newReview = await prisma.review.create({
             data: {
-              rating: req.body.rating,
+              rating: parseInt(req.body.rating),
               reviewText: req.body.reviewText,
               reviewer: { connect: { id: parseInt(req.userId) } },
               gig: { connect: { id: parseInt(req.params.gigId) } },
@@ -339,8 +340,13 @@ export const addReview = async (req, res, next) => {
             include: { reviewer: true },
           });
           return res.status(201).json({ newReview });
+        } catch (prismaError) {
+          console.error("🔥 Prisma Error:", prismaError);
+          return res.status(500).send("Database error while creating review.");
         }
+      }else{
         return res.status(400).send("ReviewText and Rating are required.");
+      }
       // }
       // return res.status(400).send("You need to purchase the gig to add a review.");
     }
