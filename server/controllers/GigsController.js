@@ -264,13 +264,13 @@ export const editGig = async (req, res, next) => {
 
 export const searchGigs = async (req, res, next) => {
   try {
-    if (req.query.searchTerm || req.query.category) {
+    if (req.query.searchTerm && req.query.category) {
       const gigs = await prisma.gigs.findMany(
         createSearchQuery(req.query.searchTerm, req.query.category)
       );
       return res.status(200).json({ gigs });
     }
-    return res.status(400).send("Search Term or Category is required.");
+    return res.status(400).send("Both searchTerm and category are required.");
   } catch (err) {
     console.log(err);
     return res.status(500).send("Internal Server Error");
@@ -279,7 +279,7 @@ export const searchGigs = async (req, res, next) => {
 
 const createSearchQuery = (searchTerm, category) => ({
   where: {
-    OR: [
+    AND: [
       searchTerm ? { title: { contains: searchTerm, mode: "insensitive" } } : {},
       category ? { category: { contains: category, mode: "insensitive" } } : {},
     ],
