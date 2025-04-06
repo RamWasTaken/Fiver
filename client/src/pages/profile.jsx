@@ -28,7 +28,7 @@ const Profile = () => {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    if (!cookies.jwt) router.push("/login");
+    if (!cookies.jwt) router.push("/");
   }, [cookies, router]);
 
   const handleInputChange = (e) => {

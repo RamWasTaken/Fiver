@@ -26,7 +26,7 @@ export default function App({ Component, pageProps }) {
   return (
     <StateProvider initialState={initialState} reducer={reducer}>
       <Head>
-        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="shortcut icon" href="/default-image.jpeg" />
         <title>Skill Share</title>
       </Head>
       <div className="relative flex flex-col h-screen justify-between">
