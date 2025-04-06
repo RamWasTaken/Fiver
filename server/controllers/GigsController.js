@@ -264,31 +264,66 @@ export const editGig = async (req, res, next) => {
 
 export const searchGigs = async (req, res, next) => {
   try {
-    if (req.query.searchTerm && req.query.category) {
-      const gigs = await prisma.gigs.findMany(
-        createSearchQuery(req.query.searchTerm, req.query.category)
-      );
-      return res.status(200).json({ gigs });
+    const { searchTerm, category } = req.query;
+
+    if (!searchTerm && !category) {
+      return res.status(400).send("At least one of searchTerm or category is required.");
     }
-    return res.status(400).send("Both searchTerm and category are required.");
+
+    // Dynamically build filters
+    const filters = [];
+    if (searchTerm) {
+      filters.push({ title: { contains: searchTerm, mode: "insensitive" } });
+    }
+    if (category) {
+      filters.push({ category: { equals: category, mode: "insensitive" } });
+    }
+
+    const gigs = await prisma.gigs.findMany({
+      where: {
+        AND: filters, // If one filter exists, it just applies that one
+      },
+      include: {
+        reviews: { include: { reviewer: true } },
+        createdBy: true,
+      },
+    });
+
+    return res.status(200).json({ gigs });
   } catch (err) {
-    console.log(err);
+    console.error("Error in searchGigs:", err);
     return res.status(500).send("Internal Server Error");
   }
 };
 
-const createSearchQuery = (searchTerm, category) => ({
-  where: {
-    AND: [
-      searchTerm ? { title: { contains: searchTerm, mode: "insensitive" } } : {},
-      category ? { category: { contains: category, mode: "insensitive" } } : {},
-    ],
-  },
-  include: {
-    reviews: { include: { reviewer: true } },
-    createdBy: true,
-  },
-});
+
+// export const searchGigs = async (req, res, next) => {
+//   try {
+//     if (req.query.searchTerm || req.query.category) {
+//       const gigs = await prisma.gigs.findMany(
+//         createSearchQuery(req.query.searchTerm, req.query.category)
+//       );
+//       return res.status(200).json({ gigs });
+//     }
+//     return res.status(400).send("Both searchTerm and category are required.");
+//   } catch (err) {
+//     console.log(err);
+//     return res.status(500).send("Internal Server Error");
+//   }
+// };
+
+// const createSearchQuery = (searchTerm, category) => ({
+//   where: {
+//     OR: [
+//       searchTerm ? { title: { contains: searchTerm, mode: "insensitive" } } : {},
+//       category ? { category: { contains: category, mode: "insensitive" } } : {},
+//     ],
+//   },
+//   include: {
+//     reviews: { include: { reviewer: true } },
+//     createdBy: true,
+//   },
+// });
 
 const checkOrder = async (userId, gigId) => {
   try {
