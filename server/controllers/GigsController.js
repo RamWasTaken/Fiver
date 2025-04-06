@@ -319,8 +319,15 @@ export const checkGigOrder = async (req, res, next) => {
 
 export const addReview = async (req, res, next) => {
   try {
+    console.log("🔍 Add Review Request Received");
+    console.log("➡ userId:", req.userId);
+    console.log("➡ gigId:", req.params.gigId);
+    console.log("➡ reviewText:", req.body.reviewText);
+    console.log("➡ rating:", req.body.rating);
+    
+    // removed purchase requirment to addReview.
     if (req.userId && req.params.gigId) {
-      if (await checkOrder(req.userId, req.params.gigId)) {
+      // if (await checkOrder(req.userId, req.params.gigId)) {
         if (req.body.reviewText && req.body.rating) {
           const newReview = await prisma.review.create({
             data: {
@@ -334,8 +341,8 @@ export const addReview = async (req, res, next) => {
           return res.status(201).json({ newReview });
         }
         return res.status(400).send("ReviewText and Rating are required.");
-      }
-      return res.status(400).send("You need to purchase the gig to add a review.");
+      // }
+      // return res.status(400).send("You need to purchase the gig to add a review.");
     }
     return res.status(400).send("userId and gigId are required.");
   } catch (err) {
