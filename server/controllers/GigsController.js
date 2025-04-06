@@ -325,12 +325,19 @@ export const addReview = async (req, res, next) => {
     console.log("➡ reviewText:", req.body.reviewText);
     console.log("➡ rating:", req.body.rating);
 
+    const gig = await prisma.gigs.findUnique({ where: { id: parseInt(req.params.gigId) } });
+    const user = await prisma.user.findUnique({ where: { id: parseInt(req.userId) } });
+
+    if (!gig || !user) {
+      return res.status(404).json({ error: "User or Gig not found" });
+    }
+
     // removed purchase requirment to addReview.
     if (req.userId && req.params.gigId) {
       // if (await checkOrder(req.userId, req.params.gigId)) {
       if (req.body.reviewText && req.body.rating) {
         try {
-          const newReview = await prisma.review.create({
+          const newReview = await prisma.reviews.create({
             data: {
               rating: parseInt(req.body.rating),
               reviewText: req.body.reviewText,
@@ -341,10 +348,10 @@ export const addReview = async (req, res, next) => {
           });
           return res.status(201).json({ newReview });
         } catch (prismaError) {
-          console.error("🔥 Prisma Error:", prismaError);
+          console.error("🔥 Prisma Error:", JSON.stringify(prismaError, null, 2));
           return res.status(500).send("Database error while creating review.");
         }
-      }else{
+      } else {
         return res.status(400).send("ReviewText and Rating are required.");
       }
       // }
