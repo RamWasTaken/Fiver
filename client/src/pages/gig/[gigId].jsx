@@ -1,15 +1,12 @@
 import React, { useEffect } from "react";
-import Pricing from "../../components/Gigs/Pricing";
-import Details from "../../components/Gigs/Details";
 import { useRouter } from "next/router";
 import axios from "axios";
-import {
-  CHECK_USER_ORDERED_GIG_ROUTE,
-  GET_GIG_DATA,
-} from "../../utils/constants";
+import { useCookies } from "react-cookie"; 
+import Pricing from "../../components/Gigs/Pricing";
+import Details from "../../components/Gigs/Details";
+import {CHECK_USER_ORDERED_GIG_ROUTE, GET_GIG_DATA,} from "../../utils/constants";
 import { useStateProvider } from "../../context/StateContext";
 import { reducerCases } from "../../context/constants";
-import { useCookies } from "react-cookie"; 
 
 function Gig() {
   const router = useRouter();

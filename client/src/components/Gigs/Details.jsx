@@ -28,13 +28,13 @@ function Details() {
 
   // Helper function to get main image URL
   const getMainImageUrl = (gig) => {
-    if (!gig?.images?.length) return '/default-gig-image.jpg';
-    return gig.images[0]; // Use the first image URL directly
+    if (gig?.images?.length) return gig.images[0];
+    return '/default-gig-image.jpeg';
   };
 
   // Helper function to get profile image URL
   const getProfileImageUrl = (user) => {
-    if (!user?.profileImage) return null;
+    if (!user?.profileImage) return '/default-image.jpeg';
     return user.profileImage; // Use the profile image URL directly
   };
 
