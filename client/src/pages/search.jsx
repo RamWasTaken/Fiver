@@ -91,7 +91,7 @@ function Search() {
               <img
                 src="/empty.png"
                 alt="No gigs found"
-                className="w-80 h-80 object-contain mb-4"
+                className="w-full h-screen object-contain mb-4"
               />
               <p className="text-gray-500 text-xl">😕 No gigs found matching your search.</p>
             </div>
