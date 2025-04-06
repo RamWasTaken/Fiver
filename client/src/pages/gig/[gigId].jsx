@@ -4,9 +4,9 @@ import axios from "axios";
 import { useCookies } from "react-cookie"; 
 import Pricing from "../../components/Gigs/Pricing";
 import Details from "../../components/Gigs/Details";
-import {CHECK_USER_ORDERED_GIG_ROUTE, GET_GIG_DATA,} from "../../utils/constants";
 import { useStateProvider } from "../../context/StateContext";
 import { reducerCases } from "../../context/constants";
+import {CHECK_USER_ORDERED_GIG_ROUTE, GET_GIG_DATA,} from "../../utils/constants";
 
 function Gig() {
   const router = useRouter();
@@ -16,6 +16,8 @@ function Gig() {
   useEffect(() => {
     dispatch({ type: reducerCases.SET_GIG_DATA, gigData: undefined });
   }, [dispatch]);
+  
+  // Gig Data
   useEffect(() => {
     const fetchGigData = async () => {
       try {
@@ -34,6 +36,7 @@ function Gig() {
     if (gigId) fetchGigData();
   }, [gigId, dispatch, cookies.jwt]);
 
+  // Gig Order
   useEffect(() => {
     const checkGigOrdered = async () => {
       const {

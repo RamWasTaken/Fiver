@@ -192,7 +192,7 @@ function Details() {
           </div>
 
           <Reviews />
-          {hasOrdered && <AddReview />}
+          <AddReview />
         </div>
       )}
     </>

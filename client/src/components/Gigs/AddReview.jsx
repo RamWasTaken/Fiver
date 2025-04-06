@@ -13,6 +13,8 @@ function AddReview() {
   const router = useRouter();
   const { gigId } = router.query;
   const [cookies] = useCookies(['jwt']);
+
+  // addReview
   const addReview = async () => {
     try {
       const response = await axios.post(
@@ -35,6 +37,7 @@ function AddReview() {
       console.error(err);
     }
   };
+  
   return (
     <div className="mb-10">
       <h3 className="text-2xl my-5 font-normal   text-[#404145]">
