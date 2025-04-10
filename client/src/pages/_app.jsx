@@ -1,7 +1,6 @@
 import "../globals.css";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
-
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useCookies } from "react-cookie";
@@ -29,15 +28,11 @@ export default function App({ Component, pageProps }) {
         <link rel="shortcut icon" href="/default-image.jpeg" />
         <title>Skill Share</title>
       </Head>
-      <div className="relative flex flex-col h-screen justify-between">
+      <div className="relative flex flex-col min-h-screen">
         <Navbar />
-        <div
-          className={`${
-            router.pathname !== "/" ? "mt-36" : ""
-          } mb-auto w-full mx-auto`}
-        >
+        <main className={`flex-grow ${router.pathname !== "/" ? "mt-36" : ""}`}>
           <Component {...pageProps} />
-        </div>
+        </main>
         <Footer />
       </div>
     </StateProvider>

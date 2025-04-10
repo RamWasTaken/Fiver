@@ -10,7 +10,7 @@ import { gigRoutes } from "../routes/GigRoutes.js";
 import { orderRoutes } from "../routes/OrderRoutes.js";
 import { messageRoutes } from "../routes/MessageRoutes.js";
 import { dashboardRoutes } from "../routes/DashboardRoutes.js";
-
+// fix authentication frontend , undersand cookie and JWT backend . make frontend responsive and mobile friendly .
 dotenv.config();
 
 const app = express();

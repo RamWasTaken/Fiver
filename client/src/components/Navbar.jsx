@@ -10,6 +10,7 @@ import { GET_USER_INFO, HOST } from "../utils/constants";
 import ContextMenu from "./ContextMenu";
 import { useStateProvider } from "../context/StateContext";
 import { reducerCases } from "../context/constants";
+import { FiMenu } from "react-icons/fi";
 
 function Navbar() {
   const [cookies] = useCookies();
@@ -18,14 +19,29 @@ function Navbar() {
   const [searchData, setSearchData] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
   const [isContextMenuVisible, setIsContextMenuVisible] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
   const [{ showLoginModal, showSignupModal, isSeller, userInfo }, dispatch] = useStateProvider();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+      if (window.innerWidth > 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleLogin = () => {
     if (showSignupModal) {
       dispatch({ type: reducerCases.TOGGLE_SIGNUP_MODAL, showSignupModal: false });
     }
     dispatch({ type: reducerCases.TOGGLE_LOGIN_MODAL, showLoginModal: true });
+    setIsMobileMenuOpen(false);
   };
 
   const handleSignup = () => {
@@ -33,6 +49,7 @@ function Navbar() {
       dispatch({ type: reducerCases.TOGGLE_LOGIN_MODAL, showLoginModal: false });
     }
     dispatch({ type: reducerCases.TOGGLE_SIGNUP_MODAL, showSignupModal: true });
+    setIsMobileMenuOpen(false);
   };
 
   useEffect(() => {
@@ -49,11 +66,13 @@ function Navbar() {
 
   const handleOrdersNavigate = () => {
     router.push(isSeller ? "/seller/orders" : "/buyer/orders");
+    setIsMobileMenuOpen(false);
   };
 
   const handleModeSwitch = () => {
     dispatch({ type: reducerCases.SWITCH_MODE });
     router.push(isSeller ? "/buyer/orders" : "/seller");
+    setIsMobileMenuOpen(false);
   };
 
   useEffect(() => {
@@ -83,7 +102,6 @@ function Navbar() {
 
           let projectedUserInfo = { ...response.data.user };
           
-          // Simplify the image handling
           if (projectedUserInfo.image && !projectedUserInfo.image.startsWith('http')) {
             projectedUserInfo.image = `${HOST}${projectedUserInfo.image}`;
           }
@@ -144,18 +162,19 @@ function Navbar() {
     <>
       {isLoaded && (
         <nav
-          className={`w-full px-24 flex justify-between items-center py-6 top-0 z-30 transition-all duration-300 ${navFixed || userInfo ? "fixed bg-white border-b border-gray-200" : "absolute bg-transparent border-transparent"
-            }`}
+          className={`w-full px-4 md:px-24 flex justify-between items-center py-4 top-0 z-30 transition-all duration-300 ${
+            navFixed || userInfo ? "fixed bg-white border-b border-gray-200" : "absolute bg-transparent border-transparent"
+          }`}
         >
           {/* Logo */}
-          <div>
+          <div className="flex-shrink-0">
             <Link href="/">
               <FiverrLogo fillColor={!navFixed && !userInfo ? "#ffffff" : "#404145"} />
             </Link>
           </div>
 
-          {/* Search Bar */}
-          <div className={`flex ${navFixed || userInfo ? "opacity-100" : "opacity-0"}`}>
+          {/* Search Bar - Hidden on mobile */}
+          <div className={`hidden md:flex ${navFixed || userInfo ? "opacity-100" : "opacity-0"}`}>
             <input
               type="text"
               placeholder="What service are you looking for today?"
@@ -179,59 +198,114 @@ function Navbar() {
             </button>
           </div>
 
-          {/* Navbar Buttons */}
-          {!userInfo ? (
-            <ul className="flex gap-10 items-center">
-              <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={handleLogin}>Sign In</li>
-              <li className="cursor-pointer font-medium" onClick={handleSignup}>Join</li>
-            </ul>
-          ) : (
-            <ul className="flex gap-10 items-center">
-              {/* Orders Button */}
-              <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={handleOrdersNavigate}>
-                Orders
-              </li>
+          {/* Right side content */}
+          <div className="flex items-center">
+            {/* Mobile Menu Button - Only visible on mobile */}
+            {windowWidth <= 768 && (
+              <button 
+                className="text-gray-700 ml-auto" // Added ml-auto to push to right
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                <FiMenu size={24} />
+              </button>
+            )}
 
-              {/* Seller-Specific Buttons */}
-              {isSeller && (
+            {/* Desktop Navbar Buttons - Hidden on mobile */}
+            {windowWidth > 768 && (
+              <>
+                {!userInfo ? (
+                  <ul className="flex gap-10 items-center">
+                    <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={handleLogin}>Sign In</li>
+                    <li className="cursor-pointer font-medium" onClick={handleSignup}>Join</li>
+                  </ul>
+                ) : (
+                  <ul className="flex gap-10 items-center">
+                    <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={handleOrdersNavigate}>
+                      Orders
+                    </li>
+
+                    {isSeller && (
+                      <>
+                        <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={() => router.push("/seller/gigs/create")}>
+                          Create Gig
+                        </li>
+                        <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={() => router.push("/seller/gigs")}>
+                          Manage Gigs
+                        </li>
+                      </>
+                    )}
+
+                    <li className="cursor-pointer font-medium" onClick={handleModeSwitch}>
+                      {isSeller ? "Switch to Buyer" : "Switch to Seller"}
+                    </li>
+
+                    <li className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setIsContextMenuVisible(true); }}>
+                      {userInfo?.image ? (
+                        <Image
+                          src={userInfo.image.startsWith('http') ? userInfo.image : `${HOST}${userInfo.image}`}
+                          alt="Profile"
+                          width={40}
+                          height={40}
+                          className="rounded-full object-cover"
+                          unoptimized
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/default-profile.png';
+                          }}
+                        />
+                      ) : (
+                        <div className="bg-purple-500 h-10 w-10 flex items-center justify-center rounded-full text-white text-xl">
+                          {userInfo?.email?.[0]?.toUpperCase()}
+                        </div>
+                      )}
+                    </li>
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Mobile Menu - Only visible when toggled */}
+          {isMobileMenuOpen && windowWidth <= 768 && (
+            <div className="fixed top-16 right-4 bg-white shadow-lg rounded-md z-50 p-4 w-48">
+              {!userInfo ? (
                 <>
-                  <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={() => router.push("/seller/gigs/create")}>
-                    Create Gig
-                  </li>
-                  <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={() => router.push("/seller/gigs")}>
-                    Manage Gigs
-                  </li>
+                  <div className="cursor-pointer text-[#1DBF73] font-medium py-2" onClick={handleLogin}>Sign In</div>
+                  <div className="cursor-pointer font-medium py-2" onClick={handleSignup}>Join</div>
+                </>
+              ) : (
+                <>
+                  <div className="cursor-pointer text-[#1DBF73] font-medium py-2" onClick={handleOrdersNavigate}>
+                    Orders
+                  </div>
+
+                  {isSeller && (
+                    <>
+                      <div className="cursor-pointer text-[#1DBF73] font-medium py-2" onClick={() => { router.push("/seller/gigs/create"); setIsMobileMenuOpen(false); }}>
+                        Create Gig
+                      </div>
+                      <div className="cursor-pointer text-[#1DBF73] font-medium py-2" onClick={() => { router.push("/seller/gigs"); setIsMobileMenuOpen(false); }}>
+                        Manage Gigs
+                      </div>
+                    </>
+                  )}
+
+                  <div className="cursor-pointer font-medium py-2" onClick={handleModeSwitch}>
+                    {isSeller ? "Switch to Buyer" : "Switch to Seller"}
+                  </div>
+
+                  <div className="cursor-pointer font-medium py-2" onClick={() => { router.push("/profile"); setIsMobileMenuOpen(false); }}>
+                    Profile
+                  </div>
+
+                  <div className="cursor-pointer font-medium py-2" onClick={() => { router.push("/logout"); setIsMobileMenuOpen(false); }}>
+                    Logout
+                  </div>
                 </>
               )}
-
-              {/* Switch Role Button */}
-              <li className="cursor-pointer font-medium" onClick={handleModeSwitch}>
-                {isSeller ? "Switch to Buyer" : "Switch to Seller"}
-              </li>
-
-              {/* Profile Menu */}
-              <li className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setIsContextMenuVisible(true); }}>
-                {userInfo?.image ? (
-                  <Image
-                    src={userInfo.image.startsWith('http') ? userInfo.image : `${HOST}${userInfo.image}`}
-                    alt="Profile"
-                    width={40}
-                    height={40}
-                    className="rounded-full object-cover"
-                    unoptimized // Important for external URLs
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = '/default-profile.png';
-                    }}
-                  />
-                ) : (
-                  <div className="bg-purple-500 h-10 w-10 flex items-center justify-center rounded-full text-white text-xl">
-                    {userInfo?.email?.[0]?.toUpperCase()}
-                  </div>
-                )}
-              </li>
-            </ul>
+            </div>
           )}
+
           {isContextMenuVisible && <ContextMenu data={ContextMenuData} />}
         </nav>
       )}
