@@ -11,11 +11,11 @@ function EditGig() {
   const [cookies] = useCookies(['jwt']);
   const router = useRouter();
   const { gigId } = router.query;
-  
+
   // Constants
   const inputClassName = "block p-4 w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500";
   const labelClassName = "mb-2 text-lg font-medium text-gray-900";
-  
+
   // State
   const [files, setFile] = useState([]);
   const [features, setFeatures] = useState([]);
@@ -36,13 +36,10 @@ function EditGig() {
   useEffect(() => {
     const fetchGigData = async () => {
       if (!gigId) return;
-      
       try {
         setIsLoading(true);
         const { data: { gig } } = await axios.get(`${GET_GIG_DATA}/${gigId}`, {
-          headers: {
-            Authorization: `Bearer ${cookies.jwt}`,
-          },
+          headers: { Authorization: `Bearer ${cookies.jwt}` },
         });
 
         setData({
@@ -56,27 +53,10 @@ function EditGig() {
           shortDesc: gig.shortDesc,
           id: gig.id,
         });
-        
+
         setFeatures(gig.features || []);
-
-        // Load existing images (with error handling)
-        const imageFiles = await Promise.all(
-          (gig.images || []).map(async (image) => {
-            try {
-              const url = `${process.env.NEXT_PUBLIC_SERVER_URL}/uploads/${image}`;
-              const response = await fetch(url);
-              if (!response.ok) throw new Error("Failed to fetch image");
-              const blob = await response.blob();
-              return new File([blob], image, { type: blob.type });
-            } catch (error) {
-              console.error("Error loading image:", image, error);
-              toast.warn(`Could not load image: ${image}`);
-              return null;
-            }
-          })
-        );
-
-        setFile(imageFiles.filter(Boolean));
+        // Just store the image URLs, not converting to File objects
+        setFile(gig.images || []);
       } catch (err) {
         console.error("Error fetching gig data:", err);
         toast.error("Failed to load gig data");
@@ -85,7 +65,6 @@ function EditGig() {
         setIsLoading(false);
       }
     };
-
     fetchGigData();
   }, [gigId, cookies.jwt, router]);
 
@@ -110,8 +89,8 @@ function EditGig() {
     const { category, description, price, revisions, time, title, shortDesc, id } = data;
 
     // Validation
-    if (!title || !description || !category || features.length === 0 || 
-        files.length === 0 || price <= 0 || !shortDesc || revisions <= 0 || time <= 0) {
+    if (!title || !description || !category || features.length === 0 ||
+      files.length === 0 || price <= 0 || !shortDesc || revisions <= 0 || time <= 0) {
       toast.error("Please fill all required fields");
       return;
     }
@@ -119,10 +98,14 @@ function EditGig() {
     setIsLoading(true); // Set loading state
     try {
       const formData = new FormData();
-      
-      // Add files
-      files.forEach(file => formData.append("images", file));
-      
+
+      // Add new files (filter out URLs - these are existing images)
+      files.forEach(file => {
+        if (file instanceof File) {
+          formData.append("images", file);
+        }
+      });
+
       // Add JSON data
       formData.append("data", JSON.stringify({
         title,
@@ -134,6 +117,7 @@ function EditGig() {
         time: Number(time),
         shortDesc,
       }));
+      formData.append("id", id); // new:- added id too.
 
       const response = await axios.put(
         `${EDIT_GIG_DATA}/${id}`,
@@ -155,13 +139,12 @@ function EditGig() {
     } catch (error) {
       console.error("Error updating gig:", error);
       let errorMessage = "Failed to update gig";
-      
+
       if (axios.isAxiosError(error)) {
         errorMessage = error.response?.data?.message || errorMessage;
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
-      
       toast.error(errorMessage);
     } finally {
       setIsLoading(false); // Reset loading state
@@ -182,9 +165,9 @@ function EditGig() {
       <h3 className="text-xl md:text-3xl text-gray-900 mb-5">
         Update your gig details
       </h3>
-      
-      <form 
-        className="flex flex-col gap-5 mt-10" 
+
+      <form
+        className="flex flex-col gap-5 mt-10"
         onSubmit={(e) => { e.preventDefault(); editGig(); }}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-11">
@@ -204,7 +187,7 @@ function EditGig() {
               required
             />
           </div>
-          
+
           {/* Category */}
           <div>
             <label htmlFor="categories" className={labelClassName}>
@@ -262,7 +245,7 @@ function EditGig() {
               required
             />
           </div>
-          
+
           {/* Revisions */}
           <div>
             <label htmlFor="revision" className={labelClassName}>
@@ -307,7 +290,7 @@ function EditGig() {
                 Add
               </button>
             </div>
-            
+
             {features.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {features.map((feature, index) => (
@@ -329,18 +312,19 @@ function EditGig() {
               </div>
             )}
           </div>
-          
+
           {/* Images */}
           <div>
             <label htmlFor="image" className={labelClassName}>
               Gig Images
             </label>
             <div>
-              <ImageUpload 
-                files={files} 
-                setFile={setFile} 
+              <ImageUpload
+                files={files}
+                setFile={setFile}
                 maxFiles={5}
                 maxSizeMB={5}
+                existingImages={files.filter(file => typeof file === 'string')}
               />
             </div>
           </div>
@@ -364,7 +348,7 @@ function EditGig() {
               required
             />
           </div>
-          
+
           {/* Price */}
           <div>
             <label htmlFor="price" className={labelClassName}>

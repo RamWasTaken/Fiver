@@ -10,19 +10,19 @@ function Details() {
   const [currentImage, setCurrentImage] = useState("");
   const [averageRatings, setAverageRatings] = useState("0");
 
-  // Get the first image URL when gigData loads
-  useEffect(() => {
-    if (gigData) {
-      setCurrentImage(getMainImageUrl(gigData));
-    }
-  }, [gigData]);
-
   // Calculate average ratings
   useEffect(() => {
     if (gigData && gigData.reviews?.length) {
       let avgRating = 0;
       gigData.reviews.forEach(({ rating }) => (avgRating += rating));
       setAverageRatings((avgRating / gigData.reviews.length).toFixed(1));
+    }
+  }, [gigData]);
+  
+  // Get the first image URL when gigData loads
+  useEffect(() => {
+    if (gigData) {
+      setCurrentImage(getMainImageUrl(gigData));
     }
   }, [gigData]);
 
@@ -42,6 +42,7 @@ function Details() {
     <>
       {gigData && currentImage && (
         <div className="col-span-2 flex flex-col gap-3">
+        {/* Title */}
           <h2 className="text-2xl font-bold text-[#404145] mb-1">
             {gigData.title}
           </h2>

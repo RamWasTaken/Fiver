@@ -1,4 +1,5 @@
-"use client"; 
+"use client";
+// FIle : for creating gigs when we are user , creategig , create , gig.
 import ImageUpload from "../../../components/ImageUpload";
 import { categories } from "../../../utils/categories";
 import { ADD_GIG_ROUTE } from "../../../utils/constants";
@@ -11,8 +12,7 @@ import { useEffect } from "react";
 function CreateGigs() {
   const [cookies] = useCookies(['jwt']);
   const router = useRouter();
-  const inputClassName =
-    "block p-4 w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50  focus:ring-blue-500 focus:border-blue-500";
+  const inputClassName = "block p-4 w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50  focus:ring-blue-500 focus:border-blue-500";
   const labelClassName = "mb-2 text-lg font-medium text-gray-900  ";
   const [files, setFile] = useState([]);
   const [features, setfeatures] = useState([]);
@@ -26,10 +26,10 @@ function CreateGigs() {
     price: 0,
     shortDesc: "",
   });
+
   useEffect(() => {
     console.log("🚀 Category being sent:", data.category);
   }, [data.category]);
-  // Only runs when `category` changes
 
   // Function to remove a feature from the list
   const removeFeature = (index) => {
@@ -46,58 +46,58 @@ function CreateGigs() {
   // Add a feature to the list
   const addFeature = () => {
     if (data.feature) {
-      setfeatures([...features, data.feature]);
-      setData({ ...data, feature: "" });
+      setfeatures([...features, data.feature]);// Add the feature to the features array
+      setData({ ...data, feature: "" });// Clear the feature input field
     }
   };
 
   // Function to add a new gig
-const addGig = async () => {
-  const { category, description, price, revisions, time, title, shortDesc } = data;
+  const addGig = async () => {
+    const { category, description, price, revisions, time, title, shortDesc } = data;
 
-  // Validate all required fields
-  if (!category || !description || !title || features.length === 0 ||
-    files.length === 0 || price <= 0 || !shortDesc || revisions <= 0 || time <= 0) {
-  alert("Please fill all required fields");
-  return;
-}
-
-  const formData = new FormData();
-  
-  // Append files
-  files.forEach((file) => formData.append("images", file));
-  
-  // Append other data as JSON
-  const gigData = {
-    title,
-    description,
-    category,
-    features, // Send as array directly
-    price,
-    revisions,
-    time,
-    shortDesc,
-  };
-  
-  formData.append("data", JSON.stringify(gigData));
-
-  try {
-    const response = await axios.post(ADD_GIG_ROUTE, formData, {
-      withCredentials: true,
-      headers: {
-        "Content-Type": "multipart/form-data",
-        Authorization: `Bearer ${String(cookies.jwt)}`,
-      },
-    });
-
-    if (response.status === 201) {
-      router.push("/seller/gigs");
+    // Validate all required fields
+    if (!category || !description || !title || features.length === 0 ||
+      files.length === 0 || price <= 0 || !shortDesc || revisions <= 0 || time <= 0) {
+      alert("Please fill all required fields");
+      return;
     }
-  } catch (error) {
-    console.error("Error creating gig:", error);
-    alert(error.response?.data?.message || "Failed to create gig");
-  }
-};
+
+    const formData = new FormData();
+
+    // Append files
+    files.forEach((file) => formData.append("images", file));
+
+    // Append other data as JSON
+    const gigData = {
+      title,
+      description,
+      category,
+      features, // Send as array directly
+      price,
+      revisions,
+      time,
+      shortDesc,
+    };
+
+    formData.append("data", JSON.stringify(gigData));
+
+    try {
+      const response = await axios.post(ADD_GIG_ROUTE, formData, {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${String(cookies.jwt)}`,
+        },
+      });
+
+      if (response.status === 201) {
+        router.push("/seller/gigs");
+      }
+    } catch (error) {
+      console.error("Error creating gig:", error);
+      alert(error.response?.data?.message || "Failed to create gig");
+    }
+  };
 
   return (
     <div className="min-h-[80vh] my-10 mt-0 px-32 ">

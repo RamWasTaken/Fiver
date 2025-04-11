@@ -161,9 +161,12 @@ export const getGigData = async (req, res, next) => {
 
 export const editGig = async (req, res, next) => {
   try {
-    // Parse the JSON data from form-data (CHANGED: same as addGig)
-    const gigData = JSON.parse(req.body.data);
+    // 1. Parse and validate incoming data
+    if (!req.body.data) {
+      return res.status(400).json({ error: "Missing gig data" });
+    }
 
+    const gigData = JSON.parse(req.body.data);
     const {
       title,
       description,
@@ -175,89 +178,120 @@ export const editGig = async (req, res, next) => {
       shortDesc
     } = gigData;
 
-    // Validate required fields (NEW: validation like addGig)
+    // 2. Validate required fields
     if (!title || !description || !category || !features?.length ||
       !price || !revisions || !time || !shortDesc) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Get old gig data (NEW: needed for image cleanup)
+    // 3. Get the existing gig data
+    const gigId = parseInt(req.params.gigId);
     const oldGig = await prisma.gigs.findUnique({
-      where: { id: parseInt(req.params.gigId) },
+      where: { id: gigId },
     });
 
-    if (!oldGig) return res.status(404).send("Gig not found");
+    if (!oldGig) {
+      return res.status(404).json({ error: "Gig not found" });
+    }
 
-    let imageUrls = oldGig.images; // Keep existing images by default
+    // 4. Initialize image handling
+    let imageUrls = [...oldGig.images]; // Start with existing images
+    let newImageUrls = [];
 
-    // 1. Handle file uploads to Supabase (CHANGED: like addGig)
+    // 5. Process new file uploads if any
     if (req.files && req.files.length > 0) {
-      // Upload new files to Supabase
-      const uploadPromises = req.files.map(async (file) => {
-        const fileExt = file.originalname.split('.').pop();
-        const fileName = `gigs/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      try {
+        // Upload new files to Supabase
+        newImageUrls = await Promise.all(
+          req.files.map(async (file) => {
+            const fileExt = file.originalname.split('.').pop() || 'jpg';
+            const fileName = `gigs/${gigId}/${Date.now()}-${Math.random()
+              .toString(36)
+              .substring(2, 8)}.${fileExt}`;
 
-        const { error } = await supabase.storage
-          .from('gig-images')
-          .upload(fileName, file.buffer, {
-            contentType: file.mimetype,
-            upsert: false
-          });
+            // Upload to Supabase
+            const { error } = await supabase.storage
+              .from('gig-images')
+              .upload(fileName, file.buffer, {
+                contentType: file.mimetype,
+                upsert: false
+              });
 
-        if (error) throw new Error(`Supabase upload error: ${error.message}`);
+            if (error) throw error;
 
-        return supabase.storage
-          .from('gig-images')
-          .getPublicUrl(fileName).data.publicUrl;
-      });
+            // Get public URL
+            return supabase.storage
+              .from('gig-images')
+              .getPublicUrl(fileName).data.publicUrl;
+          })
+        );
 
-      imageUrls = await Promise.all(uploadPromises);
-
-      // Delete old images from Supabase (NEW: cleanup)
-      if (oldGig.images?.length) {
-        await Promise.all(oldGig.images.map(url => {
-          const fileName = url.split('/').pop();
-          return supabase.storage
+        // Combine new URLs with existing ones
+        imageUrls = [...imageUrls, ...newImageUrls];
+      } catch (uploadError) {
+        console.error("Upload error:", uploadError);
+        // Clean up any partially uploaded files
+        if (newImageUrls.length > 0) {
+          await supabase.storage
             .from('gig-images')
-            .remove([`gigs/${fileName}`]);
-        }));
+            .remove(newImageUrls.map(url => {
+              const parts = url.split('/');
+              return parts.slice(parts.indexOf('gigs')).join('/');
+            }));
+        }
+        throw new Error("Failed to upload new images");
       }
     }
 
-    // 2. Update gig in database (CHANGED: using proper data format)
+    // 6. Update the gig in database
     const updatedGig = await prisma.gigs.update({
-      where: { id: parseInt(req.params.gigId) },
+      where: { id: gigId },
       data: {
         title,
         description,
         deliveryTime: parseInt(time),
         category,
-        features: features, // CHANGED: no need for JSON.parse
-        price: parseInt(price),
+        features: Array.isArray(features) ? features : JSON.parse(features),
+        price: parseFloat(price),
         shortDesc,
         revisions: parseInt(revisions),
         images: imageUrls
       },
     });
 
-    return res.status(200).json(updatedGig);
+    // 7. Clean up old images if they were replaced
+    if (req.files?.length > 0 && oldGig.images?.length > 0) {
+      try {
+        await supabase.storage
+          .from('gig-images')
+          .remove(oldGig.images.map(url => {
+            const parts = url.split('/');
+            return parts.slice(parts.indexOf('gigs')).join('/');
+          }));
+      } catch (cleanupError) {
+        console.error("Cleanup error:", cleanupError);
+        // Not critical - we can continue
+      }
+    }
+
+    // 8. Return success response
+    return res.status(200).json({
+      message: "Gig updated successfully",
+      gig: updatedGig
+    });
 
   } catch (err) {
-    console.error("Error updating gig:", err);
+    console.error("Error in editGig:", err);
 
-    // Clean up any uploaded files if error occurred (NEW: like addGig)
-    if (imageUrls?.length && req.files?.length) {
-      await Promise.all(imageUrls.map(url => {
-        const fileName = url.split('/').pop();
-        return supabase.storage
-          .from('gig-images')
-          .remove([`gigs/${fileName}`]);
-      }));
+    // Handle specific error cases
+    if (err instanceof SyntaxError) {
+      return res.status(400).json({ error: "Invalid JSON data" });
     }
 
     return res.status(500).json({
       error: "Failed to update gig",
-      message: err.message
+      details: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
   }
 };
