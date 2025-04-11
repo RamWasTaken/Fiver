@@ -19,7 +19,7 @@ function Index() {
       <PopularServices />
       <Everything /> {/*Modify this*/}
       {/* <Services /> Modify this */}
-      {/* <FiverrBusiness/> */}
+       {/* <FiverrBusiness/> */}
       <JoinFiverr />
       {(showLoginModal || showSignupModal) && (
         <AuthWrapper type={showLoginModal ? "login" : "signup"} />
