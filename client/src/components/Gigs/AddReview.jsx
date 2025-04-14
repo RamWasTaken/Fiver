@@ -1,22 +1,30 @@
+import axios from "axios";
+import React, { useState } from "react";
+import { useRouter } from "next/router";
+import { useCookies } from "react-cookie";
+import { FaStar } from "react-icons/fa";
 import { useStateProvider } from "../../context/StateContext";
 import { reducerCases } from "../../context/constants";
 import { ADD_REVIEW } from "../../utils/constants";
-import axios from "axios";
-import { useRouter } from "next/router";
-import React, { useState } from "react";
-import { FaStar } from "react-icons/fa";
 
 function AddReview() {
   const [{}, dispatch] = useStateProvider();
   const [data, setData] = useState({ reviewText: "", rating: 0 });
   const router = useRouter();
   const { gigId } = router.query;
+  const [cookies] = useCookies(['jwt']);
+
+  // addReview
   const addReview = async () => {
     try {
       const response = await axios.post(
         `${ADD_REVIEW}/${gigId}`,
         { ...data },
-        { withCredentials: true }
+        { withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
+          },
+         }
       );
       if (response.status === 201) {
         setData({ reviewText: "", rating: 0 });
@@ -29,10 +37,11 @@ function AddReview() {
       console.error(err);
     }
   };
+  
   return (
     <div className="mb-10">
       <h3 className="text-2xl my-5 font-normal   text-[#404145]">
-        Give Kishan Sheth a Review
+        Give User a Review
       </h3>
 
       <div className="flex  flex-col  items-start justify-start gap-3">

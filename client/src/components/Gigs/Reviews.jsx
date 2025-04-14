@@ -1,12 +1,14 @@
-import { useStateProvider } from "../../context/StateContext";
-import { HOST } from "../../utils/constants";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { FaStar } from "react-icons/fa";
+import { HOST } from "../../utils/constants";
+import { useStateProvider } from "../../context/StateContext";
 
 function Reviews() {
   const [{ gigData }] = useStateProvider();
   const [averageRatings, setAverageRatings] = useState("0");
+
+  // setAverageRating
   useEffect(() => {
     if (gigData && gigData.reviews.length) {
       let avgRating = 0;
@@ -14,6 +16,13 @@ function Reviews() {
       setAverageRatings((avgRating / gigData.reviews.length).toFixed(1));
     }
   }, [gigData]);
+
+  // Helper function to get profile image URL
+  const getProfileImageUrl = (user) => {
+    console.log("user.profileImage" + user.profileImage)
+    if (!user?.profileImage) return '/default-image.jpeg';
+    return user.profileImage; // Use the profile image URL directly
+  };
 
   return (
     <>
@@ -25,13 +34,11 @@ function Reviews() {
             <div className="flex text-yellow-500 items-center gap-2">
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <FaStar
-                    key={star}
-                    className={`cursor-pointer ${
-                      Math.ceil(averageRatings) >= star
-                        ? "text-yellow-400"
-                        : "text-gray-300"
-                    }`}
+                  <FaStar key={star}
+                    className={`cursor-pointer ${Math.ceil(averageRatings) >= star
+                      ? "text-yellow-400"
+                      : "text-gray-300"
+                      }`}
                   />
                 ))}
               </div>
@@ -44,7 +51,7 @@ function Reviews() {
                 <div>
                   {review.reviewer.profileImage ? (
                     <Image
-                      src={HOST + "/" + review.reviewer.profileImage}
+                      src={getProfileImageUrl(gigData.createdBy)}
                       alt="Profile"
                       width={40}
                       height={40}
@@ -65,11 +72,10 @@ function Reviews() {
                       {[1, 2, 3, 4, 5].map((star) => (
                         <FaStar
                           key={star}
-                          className={`cursor-pointer ${
-                            review.rating >= star
-                              ? "text-yellow-400"
-                              : "text-gray-300"
-                          }`}
+                          className={`cursor-pointer ${review.rating >= star
+                            ? "text-yellow-400"
+                            : "text-gray-300"
+                            }`}
                         />
                       ))}
                     </div>

@@ -1,233 +1,227 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { useCookies } from "react-cookie";
 import { useStateProvider } from "../context/StateContext";
 import { reducerCases } from "../context/constants";
-import {
-  HOST,
-  IMAGES_URL,
-  SET_USER_IMAGE,
-  SET_USER_INFO,
-} from "../utils/constants";
-import axios from "axios";
+import { SET_USER_IMAGE, SET_USER_INFO } from "../utils/constants";
 import Image from "next/image";
-import { useRouter } from "next/router";
-import React, { useEffect, useState } from "react";
 
-function Profile() {
+// Disable static generation for this authenticated page
+export const dynamic = 'force-dynamic';
+
+const Profile = () => {
   const router = useRouter();
   const [{ userInfo }, dispatch] = useStateProvider();
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [imageHover, setImageHover] = useState(false);
-  const [image, setImage] = useState(undefined);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [cookies] = useCookies();
+  const [isLoading, setIsLoading] = useState(false); // Make sure this is defined
+
   const [data, setData] = useState({
-    userName: "",
-    fullName: "",
-    description: "",
+    fullName: userInfo?.fullName || "",
+    userName: userInfo?.username || "",
+    description: userInfo?.description || "",
   });
+  const [image, setImage] = useState(userInfo?.image || "");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    const handleData = { ...data };
-    if (userInfo) {
-      if (userInfo?.username) handleData.userName = userInfo?.username;
-      if (userInfo?.description) handleData.description = userInfo?.description;
-      if (userInfo?.fullName) handleData.fullName = userInfo?.fullName;
-      console.log({ userInfo });
+    if (!cookies.jwt) router.push("/");
+  }, [cookies, router]);
 
-      if (userInfo?.imageName) {
-        const fileName = image;
-        fetch(userInfo.imageName).then(async (response) => {
-          const contentType = response.headers.get("content-type");
-          const blob = await response.blob();
-          // @ts-ignore
-          const files = new File([blob], fileName, { contentType });
-          // @ts-ignore
-          setImage(files);
-        });
-      }
-
-      setData(handleData);
-      setIsLoaded(true);
-    }
-  }, [userInfo]);
-
-  const handleFile = (e) => {
-    let file = e.target.files;
-    const fileType = file[0]["type"];
-    const validImageTypes = ["image/gif", "image/jpeg", "image/png"];
-    if (validImageTypes.includes(fileType)) {
-      setImage(file[0]);
-    }
-  };
-  const handleChange = (e) => {
-    setData({ ...data, [e.target.name]: e.target.value });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setData((prevData) => ({ ...prevData, [name]: value }));
   };
 
-  const setProfile = async () => {
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/png", "image/gif"];
+    if (!validTypes.includes(file.type)) {
+      setErrorMessage("Invalid image format. Please upload JPG, PNG, or GIF.");
+      return;
+    }
+
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setImage(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const uploadProfileImage = async () => {
     try {
-      const response = await axios.post(
-        SET_USER_INFO,
-        { ...data },
-        { withCredentials: true }
-      );
-      if (response.data.userNameError) {
-        setErrorMessage("Enter a Unique Username");
-      } else {
-        let imageName = "";
-        if (image) {
-          const formData = new FormData();
-          formData.append("images", image);
-          const {
-            data: { img },
-          } = await axios.post(SET_USER_IMAGE, formData, {
-            withCredentials: true,
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          });
-          imageName = img;
-        }
+      if (!selectedFile) return null;
 
-        dispatch({
-          type: reducerCases.SET_USER,
-          userInfo: {
-            ...userInfo,
-            ...data,
-            image: imageName.length ? HOST + "/" + imageName : false,
-          },
-        });
+      setIsLoading(true);
+      const formData = new FormData();
+      formData.append("image", selectedFile);
 
-        router.push("/");
+      const response = await axios.post(SET_USER_IMAGE, formData, {
+        headers: {
+          Authorization: `Bearer ${cookies.jwt}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (!response.data?.imageUrl) {
+        throw new Error("No image URL received");
       }
+
+      return response.data.imageUrl;
     } catch (err) {
-      console.error(err);
+      console.error("Image upload failed:", err);
+      let errorMsg = "Failed to upload image. Try again.";
+      
+      if (err.response?.data?.error) {
+        errorMsg = err.response.data.error;
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      
+      setErrorMessage(errorMsg);
+      return null;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const inputClassName =
-    "block p-4 w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50  focus:ring-blue-500 focus:border-blue-500";
-  const labelClassName =
-    "mb-2 text-lg font-medium text-gray-900  dark:text-white";
-  return (
-    <>
-      {isLoaded && (
-        <div className="flex flex-col items-center justify-start min-h-[80vh] gap-3">
-          {errorMessage && (
-            <div>
-              <span className="text-red-600 font-bold">{errorMessage}</span>
-            </div>
-          )}
-          <h2 className="text-3xl">Welocme to Fiverr Clone</h2>
-          <h4 className="text-xl">
-            Please complete your profile to get started
-          </h4>
-          <div className="flex flex-col items-center w-full gap-5">
-            <div
-              className="flex flex-col items-center cursor-pointer"
-              onMouseEnter={() => setImageHover(true)}
-              onMouseLeave={() => setImageHover(false)}
-            >
-              <label className={labelClassName} htmlFor="">
-                Select a profile Picture
-              </label>
-              <div className="bg-purple-500 h-36 w-36 flex items-center justify-center rounded-full relative">
-                {image ? (
-                  <Image
-                    src={URL.createObjectURL(image)}
-                    alt="profile"
-                    fill
-                    className="rounded-full"
-                  />
-                ) : (
-                  <span className="text-6xl text-white">
-                    {userInfo.email[0].toUpperCase()}
-                  </span>
-                )}
-                <div
-                  className={`absolute bg-slate-400 h-full w-full rounded-full flex items-center justify-center   transition-all duration-100  ${
-                    imageHover ? "opacity-100" : "opacity-0"
-                  }`}
-                >
-                  <span
-                    className={` flex items-center justify-center  relative`}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-12 h-12 text-white absolute"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <input
-                      type="file"
-                      onChange={handleFile}
-                      className="opacity-0"
-                      multiple={true}
-                      name="profileImage"
-                    />
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-4 w-[500px]">
-              <div>
-                <label className={labelClassName} htmlFor="userName">
-                  Please select a username
-                </label>
-                <input
-                  className={inputClassName}
-                  type="text"
-                  name="userName"
-                  id="userName"
-                  placeholder="Username"
-                  value={data.userName}
-                  onChange={handleChange}
-                />
-              </div>
+  const handleProfileUpdate = async () => {
+    try {
+      setIsLoading(true);
+      setErrorMessage("");
 
-              <div>
-                <label className={labelClassName} htmlFor="fullName">
-                  Please enter your full Name
-                </label>
-                <input
-                  className={inputClassName}
-                  type="text"
-                  name="fullName"
-                  id="fullName"
-                  placeholder="Full Name"
-                  value={data.fullName}
-                  onChange={handleChange}
-                />
+      let uploadedImage = image;
+      if (selectedFile) {
+        uploadedImage = await uploadProfileImage();
+        if (!uploadedImage) return;
+      }
+
+      const payload = {
+        fullName: data.fullName.trim() || userInfo.fullName,
+        userName: data.userName.trim() || userInfo.username,
+        description: data.description.trim() || userInfo.description,
+      };
+
+      const response = await axios.post(SET_USER_INFO, payload, {
+        headers: { Authorization: `Bearer ${cookies.jwt}` },
+      });
+
+      if (response.data.error) {
+        setErrorMessage(response.data.error);
+        return;
+      }
+
+      dispatch({
+        type: reducerCases.SET_USER,
+        userInfo: {
+          ...userInfo,
+          ...response.data.user,
+          image: uploadedImage || userInfo.image
+        }
+      });
+      router.push("/");
+    } catch (err) {
+      console.error("Profile update failed:", err);
+      setErrorMessage(
+        err.response?.data?.error || "Failed to update profile. Try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
+      <h1 className="text-3xl font-bold mb-6">Edit Profile</h1>
+      <div className="w-full max-w-md bg-gray-800 p-6 rounded-lg shadow-lg">
+        <div className="flex flex-col items-center">
+          <div className="relative w-32 h-32 mb-4 rounded-full overflow-hidden border-2 border-gray-600">
+            {image ? (
+              <Image
+                src={image}
+                alt="Profile"
+                fill
+                className="object-cover"
+                unoptimized
+                onError={() => setImage("/default-image.jpeg")}
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+                <span className="text-4xl text-gray-400">
+                  {userInfo?.email?.charAt(0).toUpperCase()}
+                </span>
               </div>
-            </div>
-            <div className="flex flex-col w-[500px]">
-              <label className={labelClassName} htmlFor="description">
-                Description
-              </label>
-              <textarea
-                name="description"
-                id="description"
-                value={data.description}
-                onChange={handleChange}
-                className={inputClassName}
-                placeholder="description"
-              ></textarea>
-            </div>
-            <button
-              className="border   text-lg font-semibold px-5 py-3   border-[#1DBF73] bg-[#1DBF73] text-white rounded-md"
-              type="button"
-              onClick={setProfile}
-            >
-              Set Profile
-            </button>
+            )}
           </div>
+          
+          <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg mb-4">
+            Change Photo
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
         </div>
-      )}
-    </>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Full Name</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              name="fullName"
+              value={data.fullName}
+              onChange={handleInputChange}
+              placeholder="Full Name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Username</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              name="userName"
+              value={data.userName}
+              onChange={handleInputChange}
+              placeholder="Username"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">About Me</label>
+            <textarea
+              name="description"
+              className="w-full px-3 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+              value={data.description}
+              onChange={handleInputChange}
+              placeholder="Tell us about yourself"
+            />
+          </div>
+
+          {errorMessage && (
+            <div className="text-red-500 text-sm mt-2">{errorMessage}</div>
+          )}
+
+          <button
+            onClick={handleProfileUpdate}
+            disabled={isLoading}
+            className={`w-full mt-4 bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              isLoading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          >
+            {isLoading ? "Updating..." : "Update Profile"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
-}
+};
 
 export default Profile;

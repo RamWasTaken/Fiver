@@ -4,26 +4,26 @@ import { BsCheckCircle } from "react-icons/bs";
 function Everything() {
   const everythingData = [
     {
-      title: "Stick to your budget",
+      title: "Access Services for Free",
       subtitle:
-        "Find the right service for every price point. No hourly rates, just project-based pricing.",
+        "No costs, no subscriptions—anyone can use the platform without paying. Learn and share skills freely.",
     },
     {
-      title: "Get quality work done quickly",
+      title: "Skill Exchange System",
       subtitle:
-        "Hand your project over to a talented freelancer in minutes, get long-lasting results.",
+        "Learn new skills by exchanging your own expertise. Offer what you know and get what you want in return.",
     },
     {
-      title: "Pay when you're happy",
+      title: "Instant Communication",
       subtitle:
-        "Upfront quotes mean no surprises. Payments only get released when you approve.",
+        "Chat directly with skill providers to discuss details, ask questions, and arrange exchanges.",
     },
     {
-      title: "Count on 24/7 support",
+      title: "Custom Video Calling",
       subtitle:
-        "Our round-the-clock support team is available to help anytime, anywhere.",
+        "Hop on a custom-built video calling app designed for seamless learning and collaboration.",
     },
-  ];
+  ];  
   return (
     <div className="bg-[#f1fdf7] flex py-20 justify-between px-24">
       <div>

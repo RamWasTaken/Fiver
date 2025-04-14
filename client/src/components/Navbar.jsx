@@ -10,6 +10,7 @@ import { GET_USER_INFO, HOST } from "../utils/constants";
 import ContextMenu from "./ContextMenu";
 import { useStateProvider } from "../context/StateContext";
 import { reducerCases } from "../context/constants";
+import { FiMenu } from "react-icons/fi";
 
 function Navbar() {
   const [cookies] = useCookies();
@@ -17,43 +18,39 @@ function Navbar() {
   const [navFixed, setNavFixed] = useState(false);
   const [searchData, setSearchData] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
-  const [{ showLoginModal, showSignupModal, isSeller, userInfo }, dispatch] =
-    useStateProvider();
+  const [isContextMenuVisible, setIsContextMenuVisible] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+  const [{ showLoginModal, showSignupModal, isSeller, userInfo }, dispatch] = useStateProvider();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+      if (window.innerWidth > 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleLogin = () => {
     if (showSignupModal) {
-      dispatch({
-        type: reducerCases.TOGGLE_SIGNUP_MODAL,
-        showSignupModal: false,
-      });
+      dispatch({ type: reducerCases.TOGGLE_SIGNUP_MODAL, showSignupModal: false });
     }
-    dispatch({
-      type: reducerCases.TOGGLE_LOGIN_MODAL,
-      showLoginModal: true,
-    });
+    dispatch({ type: reducerCases.TOGGLE_LOGIN_MODAL, showLoginModal: true });
+    setIsMobileMenuOpen(false);
   };
 
   const handleSignup = () => {
     if (showLoginModal) {
-      dispatch({
-        type: reducerCases.TOGGLE_LOGIN_MODAL,
-        showLoginModal: false,
-      });
+      dispatch({ type: reducerCases.TOGGLE_LOGIN_MODAL, showLoginModal: false });
     }
-    dispatch({
-      type: reducerCases.TOGGLE_SIGNUP_MODAL,
-      showSignupModal: true,
-    });
+    dispatch({ type: reducerCases.TOGGLE_SIGNUP_MODAL, showSignupModal: true });
+    setIsMobileMenuOpen(false);
   };
-
-  const links = [
-    { linkName: "Fiverr Business", handler: "#", type: "link" },
-    { linkName: "Explore", handler: "#", type: "link" },
-    { linkName: "English", handler: "#", type: "link" },
-    { linkName: "Become a Seller", handler: "#", type: "link" },
-    { linkName: "Sign in", handler: handleLogin, type: "button" },
-    { linkName: "Join", handler: handleSignup, type: "button2" },
-  ];
 
   useEffect(() => {
     if (router.pathname === "/") {
@@ -68,56 +65,56 @@ function Navbar() {
   }, [router.pathname]);
 
   const handleOrdersNavigate = () => {
-    if (isSeller) router.push("/seller/orders");
-    router.push("/buyer/orders");
+    router.push(isSeller ? "/seller/orders" : "/buyer/orders");
+    setIsMobileMenuOpen(false);
   };
 
   const handleModeSwitch = () => {
-    if (isSeller) {
-      dispatch({ type: reducerCases.SWITCH_MODE });
-      router.push("/buyer/orders");
-    } else {
-      dispatch({ type: reducerCases.SWITCH_MODE });
-      router.push("/seller");
-    }
+    dispatch({ type: reducerCases.SWITCH_MODE });
+    router.push(isSeller ? "/buyer/orders" : "/seller");
+    setIsMobileMenuOpen(false);
   };
 
   useEffect(() => {
     if (cookies.jwt && !userInfo) {
       const getUserInfo = async () => {
         try {
-          const {
-            data: { user },
-          } = await axios.post(
+          if (!cookies.jwt) {
+            console.error("❌ JWT token is missing!");
+            return;
+          }
+
+          const response = await axios.post(
             GET_USER_INFO,
             {},
             {
               withCredentials: true,
               headers: {
-                Authorization: `Bearer ${cookies.jwt}`,
+                Authorization: `Bearer ${cookies.jwt}`
               },
             }
           );
 
-          let projectedUserInfo = { ...user };
-          if (user.image) {
-            projectedUserInfo = {
-              ...projectedUserInfo,
-              imageName: HOST + "/" + user.image,
-            };
+          if (!response.data || !response.data.user) {
+            console.warn("⚠️ No user data returned!");
+            return;
           }
-          delete projectedUserInfo.image;
-          dispatch({
-            type: reducerCases.SET_USER,
-            userInfo: projectedUserInfo,
-          });
+
+          let projectedUserInfo = { ...response.data.user };
+          
+          if (projectedUserInfo.image && !projectedUserInfo.image.startsWith('http')) {
+            projectedUserInfo.image = `${HOST}${projectedUserInfo.image}`;
+          }
+          
+          dispatch({ type: reducerCases.SET_USER, userInfo: projectedUserInfo });
+
           setIsLoaded(true);
-          console.log({ user });
-          if (user.isProfileSet === false) {
+
+          if (response.data.user.isProfileSet === false) {
             router.push("/profile");
           }
         } catch (err) {
-          console.log(err);
+          console.error("❌ Error fetching user info:", err.response?.data?.error || err.message);
         }
       };
 
@@ -125,27 +122,28 @@ function Navbar() {
     } else {
       setIsLoaded(true);
     }
-  }, [cookies, userInfo, dispatch]);
-  const [isContextMenuVisible, setIsContextMenuVisible] = useState(false);
+  }, [cookies.jwt, userInfo, dispatch]);
+
   useEffect(() => {
     const clickListener = (e) => {
       e.stopPropagation();
-
       if (isContextMenuVisible) setIsContextMenuVisible(false);
     };
+
     if (isContextMenuVisible) {
       window.addEventListener("click", clickListener);
     }
+
     return () => {
       window.removeEventListener("click", clickListener);
     };
   }, [isContextMenuVisible]);
+
   const ContextMenuData = [
     {
       name: "Profile",
       callback: (e) => {
         e.stopPropagation();
-
         setIsContextMenuVisible(false);
         router.push("/profile");
       },
@@ -154,7 +152,6 @@ function Navbar() {
       name: "Logout",
       callback: (e) => {
         e.stopPropagation();
-
         setIsContextMenuVisible(false);
         router.push("/logout");
       },
@@ -165,30 +162,30 @@ function Navbar() {
     <>
       {isLoaded && (
         <nav
-          className={`w-full px-24 flex justify-between items-center py-6  top-0 z-30 transition-all duration-300 ${
-            navFixed || userInfo
-              ? "fixed bg-white border-b border-gray-200"
-              : "absolute bg-transparent border-transparent"
+          className={`w-full px-4 md:px-24 flex justify-between items-center py-4 top-0 z-30 transition-all duration-300 ${
+            navFixed || userInfo ? "fixed bg-white border-b border-gray-200" : "absolute bg-transparent border-transparent"
           }`}
         >
-          <div>
+          {/* Logo */}
+          <div className="flex-shrink-0">
             <Link href="/">
-              <FiverrLogo
-                fillColor={!navFixed && !userInfo ? "#ffffff" : "#404145"}
-              />
+              <FiverrLogo fillColor={!navFixed && !userInfo ? "#ffffff" : "#404145"} />
             </Link>
           </div>
-          <div
-            className={`flex ${
-              navFixed || userInfo ? "opacity-100" : "opacity-0"
-            }`}
-          >
+
+          {/* Search Bar - Hidden on mobile */}
+          <div className={`hidden md:flex ${navFixed || userInfo ? "opacity-100" : "opacity-0"}`}>
             <input
               type="text"
               placeholder="What service are you looking for today?"
               className="w-[30rem] py-2.5 px-4 border"
               value={searchData}
               onChange={(e) => setSearchData(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  router.push(`/search?q=${searchData}`);
+                }
+              }}
             />
             <button
               className="bg-gray-900 py-1.5 text-white w-16 flex justify-center items-center"
@@ -200,96 +197,115 @@ function Navbar() {
               <IoSearchOutline className="fill-white text-white h-6 w-6" />
             </button>
           </div>
-          {!userInfo ? (
-            <ul className="flex gap-10 items-center">
-              {links.map(({ linkName, handler, type }) => {
-                return (
-                  <li
-                    key={linkName}
-                    className={`${
-                      navFixed ? "text-black" : "text-white"
-                    } font-medium`}
-                  >
-                    {type === "link" && <Link href={handler}>{linkName}</Link>}
-                    {type === "button" && (
-                      <button onClick={handler}>{linkName}</button>
-                    )}
-                    {type === "button2" && (
-                      <button
-                        onClick={handler}
-                        className={`border   text-md font-semibold py-1 px-3 rounded-sm ${
-                          navFixed
-                            ? "border-[#1DBF73] text-[#1DBF73]"
-                            : "border-white text-white"
-                        } hover:bg-[#1DBF73] hover:text-white hover:border-[#1DBF73] transition-all duration-500`}
-                      >
-                        {linkName}
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <ul className="flex gap-10 items-center">
-              {isSeller && (
-                <li
-                  className="cursor-pointer text-[#1DBF73] font-medium"
-                  onClick={() => router.push("/seller/gigs/create")}
-                >
-                  Create Gig
-                </li>
-              )}
-              <li
-                className="cursor-pointer text-[#1DBF73] font-medium"
-                onClick={handleOrdersNavigate}
-              >
-                Orders
-              </li>
 
-              {isSeller ? (
-                <li
-                  className="cursor-pointer font-medium"
-                  onClick={handleModeSwitch}
-                >
-                  Switch To Buyer
-                </li>
-              ) : (
-                <li
-                  className="cursor-pointer font-medium"
-                  onClick={handleModeSwitch}
-                >
-                  Switch To Seller
-                </li>
-              )}
-              <li
-                className="cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsContextMenuVisible(true);
-                }}
-                title="Profile"
+          {/* Right side content */}
+          <div className="flex items-center">
+            {/* Mobile Menu Button - Only visible on mobile */}
+            {windowWidth <= 768 && (
+              <button 
+                className="text-gray-700 ml-auto" // Added ml-auto to push to right
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               >
-                {userInfo?.imageName ? (
-                  <Image
-                    src={userInfo.imageName}
-                    alt="Profile"
-                    width={40}
-                    height={40}
-                    className="rounded-full"
-                  />
+                <FiMenu size={24} />
+              </button>
+            )}
+
+            {/* Desktop Navbar Buttons - Hidden on mobile */}
+            {windowWidth > 768 && (
+              <>
+                {!userInfo ? (
+                  <ul className="flex gap-10 items-center">
+                    <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={handleLogin}>Sign In</li>
+                    <li className="cursor-pointer font-medium" onClick={handleSignup}>Join</li>
+                  </ul>
                 ) : (
-                  <div className="bg-purple-500 h-10 w-10 flex items-center justify-center rounded-full relative">
-                    <span className="text-xl text-white">
-                      {userInfo &&
-                        userInfo?.email &&
-                        userInfo?.email.split("")[0].toUpperCase()}
-                    </span>
-                  </div>
+                  <ul className="flex gap-10 items-center">
+                    <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={handleOrdersNavigate}>
+                      Orders
+                    </li>
+
+                    {isSeller && (
+                      <>
+                        <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={() => router.push("/seller/gigs/create")}>
+                          Create Gig
+                        </li>
+                        <li className="cursor-pointer text-[#1DBF73] font-medium" onClick={() => router.push("/seller/gigs")}>
+                          Manage Gigs
+                        </li>
+                      </>
+                    )}
+
+                    <li className="cursor-pointer font-medium" onClick={handleModeSwitch}>
+                      {isSeller ? "Switch to Buyer" : "Switch to Seller"}
+                    </li>
+
+                    <li className="cursor-pointer" onClick={(e) => { e.stopPropagation(); setIsContextMenuVisible(true); }}>
+                      {userInfo?.image ? (
+                        <Image
+                          src={userInfo.image.startsWith('http') ? userInfo.image : `${HOST}${userInfo.image}`}
+                          alt="Profile"
+                          width={40}
+                          height={40}
+                          className="rounded-full object-cover"
+                          unoptimized
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/default-profile.png';
+                          }}
+                        />
+                      ) : (
+                        <div className="bg-purple-500 h-10 w-10 flex items-center justify-center rounded-full text-white text-xl">
+                          {userInfo?.email?.[0]?.toUpperCase()}
+                        </div>
+                      )}
+                    </li>
+                  </ul>
                 )}
-              </li>
-            </ul>
+              </>
+            )}
+          </div>
+
+          {/* Mobile Menu - Only visible when toggled */}
+          {isMobileMenuOpen && windowWidth <= 768 && (
+            <div className="fixed top-16 right-4 bg-white shadow-lg rounded-md z-50 p-4 w-48">
+              {!userInfo ? (
+                <>
+                  <div className="cursor-pointer text-[#1DBF73] font-medium py-2" onClick={handleLogin}>Sign In</div>
+                  <div className="cursor-pointer font-medium py-2" onClick={handleSignup}>Join</div>
+                </>
+              ) : (
+                <>
+                  <div className="cursor-pointer text-[#1DBF73] font-medium py-2" onClick={handleOrdersNavigate}>
+                    Orders
+                  </div>
+
+                  {isSeller && (
+                    <>
+                      <div className="cursor-pointer text-[#1DBF73] font-medium py-2" onClick={() => { router.push("/seller/gigs/create"); setIsMobileMenuOpen(false); }}>
+                        Create Gig
+                      </div>
+                      <div className="cursor-pointer text-[#1DBF73] font-medium py-2" onClick={() => { router.push("/seller/gigs"); setIsMobileMenuOpen(false); }}>
+                        Manage Gigs
+                      </div>
+                    </>
+                  )}
+
+                  <div className="cursor-pointer font-medium py-2" onClick={handleModeSwitch}>
+                    {isSeller ? "Switch to Buyer" : "Switch to Seller"}
+                  </div>
+
+                  <div className="cursor-pointer font-medium py-2" onClick={() => { router.push("/profile"); setIsMobileMenuOpen(false); }}>
+                    Profile
+                  </div>
+
+                  <div className="cursor-pointer font-medium py-2" onClick={() => { router.push("/logout"); setIsMobileMenuOpen(false); }}>
+                    Logout
+                  </div>
+                </>
+              )}
+            </div>
           )}
+
           {isContextMenuVisible && <ContextMenu data={ContextMenuData} />}
         </nav>
       )}

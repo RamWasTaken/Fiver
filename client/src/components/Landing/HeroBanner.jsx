@@ -69,9 +69,9 @@ function HomeBanner() {
       <div className="z-10 relative w-[650px] flex justify-center flex-col h-full gap-5 ml-20">
         <h1 className="text-white text-5xl leading-snug">
           Find the perfect&nbsp;
-          <i>freelance</i>
+          <i>SkillSharing</i>
           <br />
-          services for your business
+          services for your Study.
         </h1>
         <div className="flex align-middle">
           <div className="relative">
@@ -82,6 +82,11 @@ function HomeBanner() {
               placeholder={`Try "building mobile app"`}
               value={searchData}
               onChange={(e) => setSearchData(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  router.push(`/search?q=${searchData}`);
+                }
+              }}
             />
           </div>
           <button

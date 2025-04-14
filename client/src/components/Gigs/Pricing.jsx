@@ -8,6 +8,9 @@ function Pricing() {
   const [{ gigData, userInfo }, dispatch] = useStateProvider();
   const router = useRouter();
 
+  console.log("📊 Pricing Component Loaded");
+  console.log("📌 gigData:", gigData);
+  console.log("📌 userInfo:", userInfo);
   return (
     <>
       {gigData && (
@@ -17,7 +20,7 @@ function Pricing() {
               <h4 className="text-md font-normal text-[#74767e]">
                 {gigData.shortDesc}
               </h4>
-              <h6 className="font-medium text-lg">${gigData.price}</h6>
+              <h6 className="font-medium text-lg">{gigData.price}♡</h6>
             </div>
             <div>
               <div className="text-[#62646a] font-semibold text-sm flex gap-6">
@@ -60,7 +63,12 @@ function Pricing() {
           </div>
           {gigData.userId !== userInfo.id && (
             <div className="flex items-center justify-center mt-5">
-              <button className=" w-5/6 hover:bg-[#74767e] py-1 border border-[#74767e] px-5 text-[#6c6d75] hover:text-white transition-all duration-300 text-lg rounded font-bold">
+              <button className=" w-5/6 hover:bg-[#74767e] py-1 border border-[#74767e] px-5 text-[#6c6d75] hover:text-white transition-all duration-300 text-lg rounded font-bold"
+               onClick={() => {
+                  console.log(`💬 Contacting seller (User ID: ${gigData.userId})`);
+                  router.push(`/messages?recipientId=${gigData.userId}`);
+                }}
+              >
                 Contact Me
               </button>
             </div>

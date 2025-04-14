@@ -3,23 +3,30 @@ import { GET_SELLER_ORDERS_ROUTE } from "../../../utils/constants";
 import axios from "axios";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import { useCookies } from "react-cookie";
 
 function Orders() {
   const [orders, setOrders] = useState([]);
   const [{ userInfo }] = useStateProvider();
+  const [cookies] = useCookies(['jwt']);
   useEffect(() => {
     const getOrders = async () => {
       try {
         const {
           data: { orders },
-        } = await axios.get(GET_SELLER_ORDERS_ROUTE, { withCredentials: true });
+        } = await axios.get(GET_SELLER_ORDERS_ROUTE, {
+          headers: {
+            Authorization: `Bearer ${cookies.jwt}`, // Add the Authorization header
+          },
+          withCredentials: true,
+        });
         setOrders(orders);
       } catch (err) {
         console.error(err);
       }
     };
     if (userInfo) getOrders();
-  }, [userInfo]);
+  }, [userInfo, cookies.jwt]);
   return (
     <div className="min-h-[80vh] my-10 mt-0 px-32">
       <h3 className="m-5 text-2xl font-semibold">All your Orders</h3>

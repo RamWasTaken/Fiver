@@ -9,16 +9,16 @@ import { useStateProvider } from "../context/StateContext";
 import { reducerCases } from "../context/constants";
 
 function AuthWrapper({ type }) {
-  const [cookies, setCookies] = useCookies();
+  const [cookies, setCookies] = useCookies(['jwt']);
   const [{ showLoginModal, showSignupModal }, dispatch] = useStateProvider();
   const router = useRouter();
-
+  const [errorMessage, setErrorMessage] = useState("");
   const [values, setValues] = useState({ email: "", password: "" });
 
   useEffect(() => {
     if (cookies.jwt) {
       dispatch({ type: reducerCases.CLOSE_AUTH_MODAL });
-      router.push("/dashboard");
+      router.push("/");
     }
   }, [cookies, dispatch, router]);
 
@@ -35,9 +35,9 @@ function AuthWrapper({ type }) {
         } = await axios.post(
           type === "login" ? LOGIN_ROUTE : SIGNUP_ROUTE,
           { email, password },
-          { withCredentials: true }
+          { withCredentials: true, headers: { "Content-Type": "application/json" } }
         );
-        setCookies("jwt", { jwt: jwt });
+        setCookies("jwt", jwt, { path: '/' });
         dispatch({ type: reducerCases.CLOSE_AUTH_MODAL });
 
         if (user) {
@@ -47,6 +47,7 @@ function AuthWrapper({ type }) {
       }
     } catch (err) {
       console.log(err);
+      setErrorMessage("Login/Signup failed. Please try again.");
     }
   };
 
@@ -86,9 +87,9 @@ function AuthWrapper({ type }) {
           <div className="flex flex-col justify-center items-center p-8 gap-7">
             <h3 className="text-2xl font-semibold text-slate-700">
               {type === "login" ? "Login" : "Sign"}
-              in to Fiverr
+              
             </h3>
-            <div className="flex flex-col gap-5">
+            {/* <div className="flex flex-col gap-5">
               <button className="text-white bg-blue-500 p-3 font-semibold w-80 flex items-center justify-center relative">
                 <MdFacebook className="absolute left-4 text-2xl" />
                 Continue with Facebook
@@ -102,7 +103,7 @@ function AuthWrapper({ type }) {
               <span className="before:content-[''] before:h-[0.5px] before:w-80 before:absolute before:top-[50%] before:left-0 before:bg-slate-400">
                 <span className="bg-white relative z-10 px-2">OR</span>
               </span>
-            </div>
+            </div> */}
             <div className="flex flex-col gap-5">
               <input
                 type="text"
