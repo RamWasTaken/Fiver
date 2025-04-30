@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import React from "react";
 import { FaStar } from "react-icons/fa";
 
+// time wasted 1hr and multiple Deepseek conversation msgs
 // Working code DO NOT CHANGE.
 
 function SearchGridItem({ gig }) {
