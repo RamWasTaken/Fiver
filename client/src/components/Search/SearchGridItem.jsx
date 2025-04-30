@@ -1,85 +1,96 @@
 import Image from "next/image";
 import { useRouter } from "next/router";
-import React from "react";
+import React, { useState } from "react";
 import { FaStar } from "react-icons/fa";
-
-// time wasted 1hr and multiple Deepseek conversation msgs
-// Working code DO NOT CHANGE.
 
 function SearchGridItem({ gig }) {
   const router = useRouter();
-  
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const images = gig.images?.length ? gig.images : ['/default-gig-image.jpeg'];
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
   const calculateRatings = () => {
     const { reviews } = gig;
     let rating = 0;
-    if (!reviews?.length) {
-      return 0;
-    }
-    reviews?.forEach((review) => {
-      rating += review.rating;
-    });
+    if (!reviews?.length) return 0;
+    reviews.forEach((review) => (rating += review.rating));
     return (rating / reviews.length).toFixed(1);
   };
 
-  // Get the first image URL from Supabase
-  const getMainImageUrl = () => {
-    if (!gig.images?.length) return '/default-gig-image.jpeg'; // fallback image
-    return gig.images[0]; // Assuming images are stored as full URLs in Supabase
-  };
-
-  // Get profile image URL from Supabase
   const getProfileImageUrl = () => {
     if (!gig.createdBy.profileImage) return null;
-    return gig.createdBy.profileImage; // Assuming this is the full Supabase URL
+    return gig.createdBy.profileImage;
   };
 
   return (
     <div
-      className="max-w-[300px] flex flex-col gap-2 p-1 cursor-pointer mb-8"
+      className="max-w-[300px] w-full flex flex-col gap-2 p-1 cursor-pointer mb-8"
       onClick={() => router.push(`/gig/${gig.id}`)}
     >
-      {/* Main Gig Image */}
-      <div className="relative w-64 h-40">
+      {/* Carousel */}
+      <div className="relative w-full h-40 overflow-hidden rounded-xl">
         <Image
-          src={getMainImageUrl()}
-          alt={gig.title || "Gig image"}
+          src={images[currentIndex]}
+          alt={`Gig Image ${currentIndex + 1}`}
           fill
-          className="rounded-xl object-cover"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          priority={false}
+          className="object-cover rounded-xl transition-all duration-300"
+          sizes="100vw"
         />
+
+        {/* Navigation buttons */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={handlePrev}
+              className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-black bg-opacity-40 text-white px-2 py-1 rounded-full text-xs"
+            >
+              ‹
+            </button>
+            <button
+              onClick={handleNext}
+              className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-black bg-opacity-40 text-white px-2 py-1 rounded-full text-xs"
+            >
+              ›
+            </button>
+          </>
+        )}
       </div>
-      
-      {/* User Profile Section */}
-      <div className="flex items-center gap-2">
-        <div>
-          {getProfileImageUrl() ? (
-            <Image
-              src={getProfileImageUrl()}
-              alt={`${gig.createdBy.username}'s profile`}
-              height={30}
-              width={30}
-              className="rounded-full object-cover"
-              quality={80}
-            />
-          ) : (
-            <div className="bg-purple-500 h-7 w-7 flex items-center justify-center rounded-full relative">
-              <span className="text-lg text-white">
-                {gig.createdBy.email[0].toUpperCase()}
-              </span>
-            </div>
-          )}
-        </div>
-        <span className="text-md ">
+
+      {/* Profile Section */}
+      <div className="flex items-center gap-2 mt-1">
+        {getProfileImageUrl() ? (
+          <Image
+            src={getProfileImageUrl()}
+            alt={`${gig.createdBy.username}'s profile`}
+            height={30}
+            width={30}
+            className="rounded-full object-cover"
+          />
+        ) : (
+          <div className="bg-purple-500 h-7 w-7 flex items-center justify-center rounded-full relative">
+            <span className="text-lg text-white">
+              {gig.createdBy.email[0].toUpperCase()}
+            </span>
+          </div>
+        )}
+        <span className="text-md">
           <strong className="font-medium">{gig.createdBy.username}</strong>
         </span>
       </div>
-      
+
       {/* Gig Title */}
-      <div>
-        <p className="line-clamp-2 text-[#404145]">{gig.title}</p>
-      </div>
-      
+      <p className="line-clamp-2 text-[#404145]">{gig.title}</p>
+
       {/* Ratings */}
       <div className="flex items-center gap-1 text-yellow-400">
         <FaStar />
@@ -88,11 +99,9 @@ function SearchGridItem({ gig }) {
         </span>
         <span className="text-[#74767e]">({gig.reviews.length})</span>
       </div>
-      
+
       {/* Price */}
-      <div>
-        <strong className="font-medium">{gig.price} ♡ </strong>
-      </div>
+      <strong className="font-medium">{gig.price} ♡</strong>
     </div>
   );
 }
